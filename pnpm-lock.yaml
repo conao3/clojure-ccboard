@@ -53,6 +53,9 @@ importers:
       scheduler:
         specifier: ^0.27.0
         version: 0.27.0
+      source-map-support:
+        specifier: ^0.5.21
+        version: 0.5.21
       stack-trace:
         specifier: ^0.0.10
         version: 0.0.10
