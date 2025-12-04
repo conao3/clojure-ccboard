@@ -2,10 +2,24 @@
  :dev-http {8000 {:roots ["resources-dev/public" "resources/public"]}}
  :nrepl {:init-ns user}
  :builds
- {:app
+ {:frontend
   {:target :browser
    :output-dir "resources-dev/public/dist/js"
    :release {:output-dir "resources/public/dist/js"}
    :modules
    {:main
-    {:init-fn conao3.claude-code-dashboard.cljs.claude-code-dashboard/start}}}}}
+    {:init-fn conao3.claude-code-dashboard.frontend.core/start}}}
+  :backend
+  {:target :node-script
+   :output-to "target/backend/main.js"
+   :main conao3.claude-code-dashboard.backend.core/main}
+  :test-frontend
+  {:target :browser-test
+   :test-dir "target/test/frontend"
+   :ns-regexp "conao3.claude-code-dashboard.frontend.*-test$"
+   :devtools {:http-port 9100
+              :http-root "target/test/frontend"}}
+  :test-backend
+  {:target :node-test
+   :output-to "target/test/backend/test.js"
+   :ns-regexp "conao3.claude-code-dashboard.backend.*-test$"}}}

@@ -1,4 +1,4 @@
-(ns conao3.claude-code-dashboard.cljs.claude-code-dashboard
+(ns conao3.claude-code-dashboard.frontend.core
   (:require
    [reagent.dom.client :as reagent.dom.client]))
 
