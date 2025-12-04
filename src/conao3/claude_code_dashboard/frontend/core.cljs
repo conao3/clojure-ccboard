@@ -1,15 +1,33 @@
 (ns conao3.claude-code-dashboard.frontend.core
   (:require
+   ["@apollo/client" :as apollo]
+   ["@apollo/client/react" :as apollo.react]
    [reagent.dom.client :as reagent.dom.client]))
 
 (enable-console-print!)
 
-(defn App []
-  [:div "hello world"])
+(defonce apollo-client
+  (apollo/ApolloClient. #js {:link (apollo/HttpLink. #js {:uri "http://localhost:4000"})
+                      :cache (apollo/InMemoryCache.)}))
 
-(defn init []
-  (let [root (-> js/document (.getElementById "app") reagent.dom.client/create-root)]
-    (reagent.dom.client/render root [App])))
+(defn HelloMessage []
+  (let [result (apollo.react/useQuery (apollo/gql "query Hello { hello }"))
+        loading (.-loading result)
+        error (.-error result)
+        data (.-data result)]
+    (cond
+      loading [:p "Loading..."]
+      error [:p (str "Error: " (.-message error))]
+      :else [:p (.-hello data)])))
+
+(defn App []
+  [:> apollo.react/ApolloProvider {:client apollo-client}
+   [:div
+    [:h1 "Claude Code Dashboard"]
+    [:f> HelloMessage]]])
+
+(defonce root (-> js/document (.getElementById "app") reagent.dom.client/create-root))
 
 (defn ^:dev/after-load start []
-  (init))
+  (reagent.dom.client/render root [App]))
+ 
