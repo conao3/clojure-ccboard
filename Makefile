@@ -20,10 +20,6 @@ release-backend:
 .PHONY: release
 release: release-frontend release-backend
 
-.PHONY: funnel
-funnel:
-	npx funnel -vv
-
 .PHONY: test-frontend
 test-frontend:
 	npx shadow-cljs compile test-frontend
