@@ -33,8 +33,8 @@ test: test-frontend test-backend
 
 .PHONY: run-backend
 run-backend:
-	node target/backend/main.js
+	node resources-dev/backend/main.js
 
 .PHONY: clean
 clean:
-	rm -rf target .shadow-cljs .cpcache resources-dev/public/dist
+	rm -rf target .shadow-cljs .cpcache resources-dev/public/dist resources-dev/backend

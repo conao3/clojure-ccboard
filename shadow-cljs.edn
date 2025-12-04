@@ -11,7 +11,8 @@
     {:init-fn conao3.claude-code-dashboard.frontend.core/start}}}
   :backend
   {:target :node-script
-   :output-to "target/backend/main.js"
+   :output-to "resources-dev/backend/main.js"
+   :release {:output-to "resources/backend/main.js"}
    :main conao3.claude-code-dashboard.backend.core/main}
   :test-frontend
   {:target :browser-test
