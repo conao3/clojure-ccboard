@@ -29,9 +29,9 @@
         app (express)]
     (-> (js/Promise.all #js [(.start api-server) (when DEV (.start admin-server))])
         (.then (fn []
-                 (.use app "/api/graphql" (cors) (.json express) (apollo.express/expressMiddleware api-server))
+                 (.use app "/api/graphql" (cors) (express/json) (apollo.express/expressMiddleware api-server))
                  (when DEV
-                   (.use app "/admin/apollo" (cors) (.json express) (apollo.express/expressMiddleware admin-server)))
+                   (.use app "/admin/apollo" (cors) (express/json) (apollo.express/expressMiddleware admin-server)))
                  (let [server (.listen app 4000)]
                    (reset! server-state {:server server :api-server api-server :admin-server admin-server})
                    (println "Server ready at http://localhost:4000/api/graphql")
