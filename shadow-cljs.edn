@@ -18,7 +18,8 @@
   {:target :node-script
    :output-to "resources-dev/backend/main.js"
    :release {:output-to "resources/backend/main.js"}
-   :main conao3.claude-code-dashboard.backend.core/main}
+   :main conao3.claude-code-dashboard.backend.core/main
+   :build-hooks [(dev/validate-graphql-schema)]}
 
   :test-frontend
   {:target :browser-test
