@@ -86,32 +86,32 @@
   (into [:div {:class (str/join " " ["flex flex-row" class])}] children))
 
 (defn AssistantMessage [{:keys [message]}]
-  [:li.p-2.rounded.bg-accent-background.text-white
-   {:key (:id message)}
-   [:div.text-xs.opacity-70.mb-1 (str "Assistant: " (:messageId message))]
-   [:pre.text-sm.font-mono.whitespace-pre-wrap.break-all
-    (-> (:rawMessage message) js/JSON.parse yaml/dump)]])
+  [:li {:key (:id message)}
+   [:details.rounded.bg-accent-background.text-white
+    [:summary.p-2.cursor-pointer [:code (str "Assistant: " (:messageId message))]]
+    [:pre.p-2.text-sm.font-mono.whitespace-pre-wrap.break-all
+     (-> (:rawMessage message) js/JSON.parse yaml/dump)]]])
 
 (defn UserMessage [{:keys [message]}]
-  [:li.p-2.rounded.bg-background-layer-2
-   {:key (:id message)}
-   [:div.text-xs.text-disabled-content.mb-1 (str "User: " (:messageId message))]
-   [:pre.text-sm.font-mono.whitespace-pre-wrap.break-all
-    (-> (:rawMessage message) js/JSON.parse yaml/dump)]])
+  [:li {:key (:id message)}
+   [:details.rounded.bg-background-layer-2
+    [:summary.p-2.cursor-pointer.text-disabled-content [:code (str "User: " (:messageId message))]]
+    [:pre.p-2.text-sm.font-mono.whitespace-pre-wrap.break-all
+     (-> (:rawMessage message) js/JSON.parse yaml/dump)]]])
 
 (defn UnknownMessage [{:keys [message]}]
-  [:li.p-2.rounded.bg-notice-background.text-white
-   {:key (:id message)}
-   [:div.text-xs.opacity-70.mb-1 (str "Unknown: " (:messageId message))]
-   [:pre.text-sm.font-mono.whitespace-pre-wrap.break-all
-    (-> (:rawMessage message) js/JSON.parse yaml/dump)]])
+  [:li {:key (:id message)}
+   [:details.rounded.bg-notice-background.text-white
+    [:summary.p-2.cursor-pointer [:code (str "Unknown: " (:messageId message))]]
+    [:pre.p-2.text-sm.font-mono.whitespace-pre-wrap.break-all
+     (-> (:rawMessage message) js/JSON.parse yaml/dump)]]])
 
 (defn BrokenMessage [{:keys [message]}]
-  [:li.p-2.rounded.bg-negative-background.text-white
-   {:key (:id message)}
-   [:div.text-xs.opacity-70.mb-1 (str "Broken: " (:messageId message))]
-   [:pre.text-sm.font-mono.whitespace-pre-wrap.break-all
-    (:rawMessage message)]])
+  [:li {:key (:id message)}
+   [:details.rounded.bg-negative-background.text-white
+    [:summary.p-2.cursor-pointer [:code (str "Broken: " (:messageId message))]]
+    [:pre.p-2.text-sm.font-mono.whitespace-pre-wrap.break-all
+     (:rawMessage message)]]])
 
 (defn MessageList []
   (let [session-id @selected-session-id
