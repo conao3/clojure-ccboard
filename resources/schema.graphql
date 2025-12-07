@@ -100,6 +100,28 @@ type UserMessage implements Node & Message {
   version: String!
 }
 
+type FileBackup {
+  backupFileName: String!
+  version: Int!
+  backupTime: String!
+}
+
+type FileHistorySnapshot {
+  messageId: String!
+  trackedFileBackups: String!
+  timestamp: String!
+}
+
+type FileHistorySnapshotMessage implements Node & Message {
+  id: ID!
+  projectId: String!
+  sessionId: String!
+  messageId: String!
+  rawMessage: String!
+  snapshot: FileHistorySnapshot!
+  isSnapshotUpdate: Boolean!
+}
+
 type UnknownMessage implements Node & Message {
   id: ID!
   projectId: String!

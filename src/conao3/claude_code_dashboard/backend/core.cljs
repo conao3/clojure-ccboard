@@ -158,6 +158,19 @@
                        :output_tokens (:output_tokens usage)
                        :service_tier (:service_tier usage)}}}))
 
+(defn- parse-file-history-snapshot-message [data project-id session-id message-id line]
+  (let [snapshot (:snapshot data)]
+    {:__typename "FileHistorySnapshotMessage"
+     :id (encode-id "Message" (str project-id "/" session-id "/" message-id))
+     :projectId project-id
+     :sessionId session-id
+     :messageId message-id
+     :rawMessage line
+     :snapshot {:messageId (:messageId snapshot)
+                :trackedFileBackups (js/JSON.stringify (clj->js (:trackedFileBackups snapshot)))
+                :timestamp (:timestamp snapshot)}
+     :isSnapshotUpdate (boolean (:isSnapshotUpdate data))}))
+
 (defn- parse-message-line [project-id session-id idx line]
   (try
     (let [data (js->clj (js/JSON.parse line) :keywordize-keys true)
@@ -165,6 +178,7 @@
       (case (:type data)
         "user" (parse-user-message data project-id session-id message-id line)
         "assistant" (parse-assistant-message data project-id session-id message-id line)
+        "file-history-snapshot" (parse-file-history-snapshot-message data project-id session-id message-id line)
         {:__typename "UnknownMessage"
          :id (encode-id "Message" (str project-id "/" session-id "/" message-id))
          :projectId project-id

@@ -48,11 +48,11 @@
         messages {
           edges {
             node {
+              __typename
+              messageId
+              rawMessage
+              ... on Node { id }
               ... on AssistantMessage {
-                __typename
-                id
-                messageId
-                rawMessage
                 assistantMessage: message {
                   content {
                     type
@@ -67,10 +67,6 @@
                 }
               }
               ... on UserMessage {
-                __typename
-                id
-                messageId
-                rawMessage
                 userMessage: message {
                   content {
                     type
@@ -80,17 +76,11 @@
                   }
                 }
               }
-              ... on UnknownMessage {
-                __typename
-                id
-                messageId
-                rawMessage
-              }
-              ... on BrokenMessage {
-                __typename
-                id
-                messageId
-                rawMessage
+              ... on FileHistorySnapshotMessage {
+                snapshot {
+                  trackedFileBackups
+                }
+                isSnapshotUpdate
               }
             }
           }
@@ -117,7 +107,14 @@
                     (js/setTimeout #(reset! copied? false) 1000))}
        (if @copied? "Copied!" (or label "Copy"))])))
 
-(defn ContentBlock [{:keys [block]}]
+(defn ToolResultBlock [{:keys [block]}]
+  [:div.m-2.p-2.rounded.bg-background-layer-1
+   [:div.font-semibold "Tool Result"]
+   [:div.text-xs.opacity-70 (str "Tool Use ID: " (:tool_use_id block))]
+   (when (:content block)
+     [:pre.mt-2.p-2.whitespace-pre-wrap.break-all (:content block)])])
+
+(defn ContentBlock [{:keys [block tool-results]}]
   (case (:type block)
     "text"
     [:div.p-2.whitespace-pre-wrap.break-all (:text block)]
@@ -128,31 +125,32 @@
      [:pre.p-2.whitespace-pre-wrap.break-all (:thinking block)]]
 
     "tool_use"
-    [:div.m-2.p-2.rounded.bg-background-layer-1
-     [:div.font-semibold (str "Tool: " (:name block))]
-     [:div.text-xs.opacity-70 (str "ID: " (:id block))]
-     (when (:input block)
-       [:pre.mt-2.p-2.whitespace-pre-wrap.break-all
-        (-> (:input block) js/JSON.parse yaml/dump)])]
+    (let [result (get tool-results (:id block))]
+      [:<>
+       [:div.m-2.p-2.rounded.bg-background-layer-1
+        [:div.font-semibold (str "Tool: " (:name block))]
+        [:div.text-xs.opacity-70 (str "ID: " (:id block))]
+        (when (:input block)
+          [:pre.mt-2.p-2.whitespace-pre-wrap.break-all
+           (-> (:input block) js/JSON.parse yaml/dump)])]
+       (when result
+         [:div.ml-4
+          [ToolResultBlock {:block result}]])])
 
     "tool_result"
-    [:div.m-2.p-2.rounded.bg-background-layer-1
-     [:div.font-semibold "Tool Result"]
-     [:div.text-xs.opacity-70 (str "Tool Use ID: " (:tool_use_id block))]
-     (when (:content block)
-       [:pre.mt-2.p-2.whitespace-pre-wrap.break-all (:content block)])]
+    [ToolResultBlock {:block block}]
 
     [:div.m-2.p-2.rounded.bg-notice-background.text-white
      [:div.font-semibold (str "Unknown: " (:type block))]]))
 
-(defn AssistantMessage [{:keys [message]}]
+(defn AssistantMessage [{:keys [message tool-results]}]
   (let [yaml-text (-> (:rawMessage message) js/JSON.parse yaml/dump)
         content-blocks (get-in message [:message :content])]
-    [:li {:key (:id message)}
+    [:li
      [:details.rounded.bg-background-layer-2.border-l-4.border-transparent
       [:summary.p-2.cursor-pointer [:code (str "Assistant: " (:messageId message))]]
       (for [[idx block] (map-indexed vector content-blocks)]
-        ^{:key idx} [ContentBlock {:block block}])
+        ^{:key idx} [ContentBlock {:block block :tool-results tool-results}])
       [:details.m-2.p-2.rounded.bg-background-layer-1
        [:summary.cursor-pointer "Raw"]
        [:div.relative.group
@@ -167,20 +165,23 @@
     [:div.p-2.whitespace-pre-wrap.break-all (:text block)]
 
     "tool_result"
-    [:div.m-2.p-2.rounded.bg-background-layer-1
-     [:div.font-semibold "Tool Result"]
-     [:div.text-xs.opacity-70 (str "Tool Use ID: " (:tool_use_id block))]
-     (when (:content block)
-       [:pre.mt-2.p-2.whitespace-pre-wrap.break-all (:content block)])]
+    [ToolResultBlock {:block block}]
 
     [:div.m-2.p-2.rounded.bg-notice-background.text-white
      [:div.font-semibold (str "Unknown: " (:type block))]]))
 
-(defn UserMessage [{:keys [message]}]
+(defn UserMessage [{:keys [message displayed-tool-use-ids]}]
   (let [yaml-text (-> (:rawMessage message) js/JSON.parse yaml/dump)
-        content-blocks (get-in message [:message :content])]
-    [:li {:key (:id message)}
+        content-blocks (get-in message [:message :content])
+        tool-result-ids (->> content-blocks
+                             (filter #(= (:type %) "tool_result"))
+                             (map :tool_use_id)
+                             set)
+        all-displayed? (and (seq tool-result-ids)
+                            (every? #(contains? displayed-tool-use-ids %) tool-result-ids))]
+    [:li
      [:details.rounded.bg-background-layer-2.border-l-4.border-accent-background
+      {:class (when all-displayed? "opacity-50")}
       [:summary.p-2.cursor-pointer [:code (str "User: " (:messageId message))]]
       (for [[idx block] (map-indexed vector content-blocks)]
         ^{:key idx} [UserContentBlock {:block block}])
@@ -217,6 +218,28 @@
       [:pre.p-2.whitespace-pre-wrap.break-all
        (:rawMessage message)]]]]])
 
+(defn FileHistorySnapshotMessage [{:keys [message]}]
+  (let [yaml-text (-> (:rawMessage message) js/JSON.parse yaml/dump)
+        snapshot (:snapshot message)
+        tracked-file-backups (-> (:trackedFileBackups snapshot) js/JSON.parse js/Object.keys js->clj)]
+    [:li {:key (:id message)}
+     [:details.rounded.bg-background-layer-2.border-l-4.border-transparent.opacity-50
+      [:summary.p-2.cursor-pointer
+       [:code (str "FileHistorySnapshot: " (:messageId message)
+                   (when (:isSnapshotUpdate message) " (update)"))]]
+      [:div.m-2.p-2.rounded.bg-background-layer-1
+       [:div.font-semibold "Tracked Files"]
+       [:ul.ml-4.list-disc
+        (for [path tracked-file-backups]
+          ^{:key path} [:li.text-sm path])]]
+      [:details.m-2.p-2.rounded.bg-background-layer-1
+       [:summary.cursor-pointer "Raw"]
+       [:div.relative.group
+        [:div.absolute.top-1.right-1.flex.gap-1
+         [CopyButton {:text yaml-text :label "Copy"}]
+         [CopyButton {:text (:rawMessage message) :label "Copy Raw"}]]
+        [:pre.p-2.whitespace-pre-wrap.break-all yaml-text]]]]]))
+
 (defn MessageList []
   (let [session-id @selected-session-id
         result (apollo.react/useQuery session-messages-query #js {:variables #js {:id session-id}
@@ -232,11 +255,16 @@
       (let [messages (for [edge (-> data .-node .-messages .-edges)]
                        (let [^js node (.-node edge)
                              assistant-msg (.-assistantMessage node)
-                             user-msg (.-userMessage node)]
+                             user-msg (.-userMessage node)
+                             snapshot (.-snapshot node)]
                          {:__typename (.-__typename node)
                           :id (.-id node)
                           :messageId (.-messageId node)
                           :rawMessage (.-rawMessage node)
+                          :isSnapshotUpdate (.-isSnapshotUpdate node)
+                          :snapshot (when snapshot
+                                      {:messageId (.-messageId snapshot)
+                                       :trackedFileBackups (.-trackedFileBackups snapshot)})
                           :message (cond
                                      assistant-msg
                                      {:content (mapv (fn [^js block]
@@ -255,7 +283,18 @@
                                                         :text (.-text block)
                                                         :tool_use_id (.-tool_use_id block)
                                                         :content (.-content block)})
-                                                     (.-content user-msg))})}))]
+                                                     (.-content user-msg))})}))
+            tool-results (->> messages
+                              (mapcat #(get-in % [:message :content]))
+                              (filter #(= (:type %) "tool_result"))
+                              (reduce (fn [m block] (assoc m (:tool_use_id block) block)) {}))
+            displayed-tool-use-ids (->> messages
+                                        (filter #(= (:__typename %) "AssistantMessage"))
+                                        (mapcat #(get-in % [:message :content]))
+                                        (filter #(= (:type %) "tool_use"))
+                                        (map :id)
+                                        (filter #(contains? tool-results %))
+                                        set)]
         (if (empty? messages)
           [:p.text-neutral-subdued-content "No messages"]
           (into [:ul.space-y-2]
@@ -267,8 +306,12 @@
                       "UserMessage" UserMessage
                       "UnknownMessage" UnknownMessage
                       "BrokenMessage" BrokenMessage
+                      "FileHistorySnapshotMessage" FileHistorySnapshotMessage
                       :div)
-                    {:message message}])
+                    (case (:__typename message)
+                      "AssistantMessage" {:message message :tool-results tool-results}
+                      "UserMessage" {:message message :displayed-tool-use-ids displayed-tool-use-ids}
+                      {:message message})])
                  messages)))))))
 
 (defn SessionList [sessions]
