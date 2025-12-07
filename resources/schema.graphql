@@ -138,6 +138,18 @@ type BrokenMessage implements Node & Message {
   rawMessage: String!
 }
 
+type QueueOperationMessage implements Node & Message {
+  id: ID!
+  projectId: String!
+  sessionId: String!
+  messageId: String!
+  rawMessage: String!
+  operation: String!
+  timestamp: String!
+  content: String!
+  queueSessionId: String!
+}
+
 type MessageConnection { edges: [MessageEdge!]! pageInfo: PageInfo! }
 type MessageEdge { cursor: String! node: Message! }
 interface Message {

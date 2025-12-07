@@ -171,6 +171,18 @@
                 :timestamp (:timestamp snapshot)}
      :isSnapshotUpdate (boolean (:isSnapshotUpdate data))}))
 
+(defn- parse-queue-operation-message [data project-id session-id message-id line]
+  {:__typename "QueueOperationMessage"
+   :id (encode-id "Message" (str project-id "/" session-id "/" message-id))
+   :projectId project-id
+   :sessionId session-id
+   :messageId message-id
+   :rawMessage line
+   :operation (:operation data)
+   :timestamp (:timestamp data)
+   :content (:content data)
+   :queueSessionId (:sessionId data)})
+
 (defn- parse-message-line [project-id session-id idx line]
   (try
     (let [data (js->clj (js/JSON.parse line) :keywordize-keys true)
@@ -179,6 +191,7 @@
         "user" (parse-user-message data project-id session-id message-id line)
         "assistant" (parse-assistant-message data project-id session-id message-id line)
         "file-history-snapshot" (parse-file-history-snapshot-message data project-id session-id message-id line)
+        "queue-operation" (parse-queue-operation-message data project-id session-id message-id line)
         {:__typename "UnknownMessage"
          :id (encode-id "Message" (str project-id "/" session-id "/" message-id))
          :projectId project-id

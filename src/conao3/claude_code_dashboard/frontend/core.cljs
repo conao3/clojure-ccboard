@@ -82,6 +82,12 @@
                 }
                 isSnapshotUpdate
               }
+              ... on QueueOperationMessage {
+                operation
+                timestamp
+                content
+                queueSessionId
+              }
             }
           }
         }
@@ -240,6 +246,24 @@
          [CopyButton {:text (:rawMessage message) :label "Copy Raw"}]]
         [:pre.p-2.whitespace-pre-wrap.break-all yaml-text]]]]]))
 
+(defn QueueOperationMessage [{:keys [message]}]
+  (let [yaml-text (-> (:rawMessage message) js/JSON.parse yaml/dump)]
+    [:li {:key (:id message)}
+     [:details.rounded.bg-background-layer-2.border-l-4.border-transparent.opacity-50
+      [:summary.p-2.cursor-pointer
+       [:code (str "QueueOperation: " (:operation message))]]
+      [:div.m-2.p-2.rounded.bg-background-layer-1
+       [:div.text-sm [:span.font-semibold "Content: "] (:content message)]
+       [:div.text-xs.opacity-70 (str "Session: " (:queueSessionId message))]
+       [:div.text-xs.opacity-70 (str "Timestamp: " (:timestamp message))]]
+      [:details.m-2.p-2.rounded.bg-background-layer-1
+       [:summary.cursor-pointer "Raw"]
+       [:div.relative.group
+        [:div.absolute.top-1.right-1.flex.gap-1
+         [CopyButton {:text yaml-text :label "Copy"}]
+         [CopyButton {:text (:rawMessage message) :label "Copy Raw"}]]
+        [:pre.p-2.whitespace-pre-wrap.break-all yaml-text]]]]]))
+
 (defn MessageList []
   (let [session-id @selected-session-id
         result (apollo.react/useQuery session-messages-query #js {:variables #js {:id session-id}
@@ -265,6 +289,10 @@
                           :snapshot (when snapshot
                                       {:messageId (.-messageId snapshot)
                                        :trackedFileBackups (.-trackedFileBackups snapshot)})
+                          :operation (.-operation node)
+                          :timestamp (.-timestamp node)
+                          :content (.-content node)
+                          :queueSessionId (.-queueSessionId node)
                           :message (cond
                                      assistant-msg
                                      {:content (mapv (fn [^js block]
@@ -307,6 +335,7 @@
                       "UnknownMessage" UnknownMessage
                       "BrokenMessage" BrokenMessage
                       "FileHistorySnapshotMessage" FileHistorySnapshotMessage
+                      "QueueOperationMessage" QueueOperationMessage
                       :div)
                     (case (:__typename message)
                       "AssistantMessage" {:message message :tool-results tool-results}
