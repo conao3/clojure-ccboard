@@ -59,6 +59,9 @@
                 id
                 messageId
                 rawMessage
+                message {
+                  content
+                }
               }
               ... on UnknownMessage {
                 __typename
@@ -111,10 +114,12 @@
         [:pre.p-2.whitespace-pre-wrap.break-all yaml-text]]]]]))
 
 (defn UserMessage [{:keys [message]}]
-  (let [yaml-text (-> (:rawMessage message) js/JSON.parse yaml/dump)]
+  (let [yaml-text (-> (:rawMessage message) js/JSON.parse yaml/dump)
+        content (get-in message [:message :content])]
     [:li {:key (:id message)}
      [:details.rounded.bg-background-layer-2.border-l-4.border-accent-background
       [:summary.p-2.cursor-pointer [:code (str "User: " (:messageId message))]]
+      [:div.p-2.whitespace-pre-wrap.break-all content]
       [:details.m-2.p-2.rounded.bg-background-layer-1
        [:summary.cursor-pointer "Raw"]
        [:div.relative.group
@@ -165,7 +170,9 @@
                          {:__typename (.-__typename node)
                           :id (.-id node)
                           :messageId (.-messageId node)
-                          :rawMessage (.-rawMessage node)}))]
+                          :rawMessage (.-rawMessage node)
+                          :message (when-let [msg (.-message node)]
+                                     {:content (.-content msg)})}))]
         (if (empty? messages)
           [:p.text-neutral-subdued-content "No messages"]
           [:ul.space-y-2

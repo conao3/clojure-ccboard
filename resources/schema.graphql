@@ -17,12 +17,33 @@ type AssistantMessage implements Node & Message {
   rawMessage: String!
 }
 
+type UserMessageContent {
+  role: String!
+  content: String!
+}
+
+type ThinkingMetadata {
+  level: String!
+  disabled: Boolean!
+  triggers: [String!]!
+}
+
 type UserMessage implements Node & Message {
   id: ID!
   projectId: String!
   sessionId: String!
   messageId: String!
   rawMessage: String!
+  parentUuid: String
+  isSidechain: Boolean!
+  userType: String!
+  cwd: String!
+  version: String!
+  gitBranch: String
+  uuid: String!
+  timestamp: String!
+  message: UserMessageContent!
+  thinkingMetadata: ThinkingMetadata
 }
 
 type UnknownMessage implements Node & Message {

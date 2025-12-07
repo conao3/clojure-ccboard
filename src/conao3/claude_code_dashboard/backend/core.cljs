@@ -74,16 +74,51 @@
     "user" "UserMessage"
     "UnknownMessage"))
 
+(defn- content->string [content]
+  (if (string? content)
+    content
+    (js/JSON.stringify (clj->js content))))
+
+(defn- parse-user-message [data project-id session-id message-id line]
+  {:__typename "UserMessage"
+   :id (encode-id "Message" (str project-id "/" session-id "/" message-id))
+   :projectId project-id
+   :sessionId session-id
+   :messageId message-id
+   :rawMessage line
+   :parentUuid (:parentUuid data)
+   :isSidechain (boolean (:isSidechain data))
+   :userType (:userType data)
+   :cwd (:cwd data)
+   :version (:version data)
+   :gitBranch (:gitBranch data)
+   :uuid (:uuid data)
+   :timestamp (:timestamp data)
+   :message {:role (get-in data [:message :role])
+             :content (content->string (get-in data [:message :content]))}
+   :thinkingMetadata (when-let [tm (:thinkingMetadata data)]
+                       {:level (:level tm)
+                        :disabled (boolean (:disabled tm))
+                        :triggers (or (:triggers tm) [])})})
+
 (defn- parse-message-line [project-id session-id idx line]
   (try
     (let [data (js->clj (js/JSON.parse line) :keywordize-keys true)
           message-id (or (:uuid data) (:messageId data) (str idx))]
-      {:__typename (message-type->typename (:type data))
-       :id (encode-id "Message" (str project-id "/" session-id "/" message-id))
-       :projectId project-id
-       :sessionId session-id
-       :messageId message-id
-       :rawMessage line})
+      (case (:type data)
+        "user" (parse-user-message data project-id session-id message-id line)
+        "assistant" {:__typename "AssistantMessage"
+                     :id (encode-id "Message" (str project-id "/" session-id "/" message-id))
+                     :projectId project-id
+                     :sessionId session-id
+                     :messageId message-id
+                     :rawMessage line}
+        {:__typename "UnknownMessage"
+         :id (encode-id "Message" (str project-id "/" session-id "/" message-id))
+         :projectId project-id
+         :sessionId session-id
+         :messageId message-id
+         :rawMessage line}))
     (catch :default _e
       {:__typename "BrokenMessage"
        :id (encode-id "Message" (str project-id "/" session-id "/" idx))
@@ -142,19 +177,14 @@
                                           file-path (.join path (projects-dir) project-id (str session-id ".jsonl"))
                                           content (try (.readFileSync fs file-path "utf-8") (catch :default _ ""))
                                           lines (->> (.split content "\n") (filter #(not= % "")))
-                                          line (->> lines
-                                                    (filter (fn [l]
-                                                              (let [data (js->clj (js/JSON.parse l) :keywordize-keys true)]
-                                                                (= message-id (or (:uuid data) (:messageId data))))))
-                                                    first)]
-                                      (when line
-                                        (let [data (js->clj (js/JSON.parse line) :keywordize-keys true)]
-                                          #js {:__typename (message-type->typename (:type data))
-                                               :id (.-id args)
-                                               :projectId project-id
-                                               :sessionId session-id
-                                               :messageId message-id
-                                               :rawMessage line})))
+                                          idx (->> lines
+                                                   (keep-indexed (fn [i l]
+                                                                   (let [data (js->clj (js/JSON.parse l) :keywordize-keys true)]
+                                                                     (when (= message-id (or (:uuid data) (:messageId data)))
+                                                                       i))))
+                                                   first)]
+                                      (when idx
+                                        (clj->js (parse-message-line project-id session-id idx (nth lines idx)))))
                           nil)))}
     "Project" {"sessions" sessions-resolver}
     "Session" {"messages" messages-resolver}
