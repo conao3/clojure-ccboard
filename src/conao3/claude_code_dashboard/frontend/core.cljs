@@ -19,17 +19,19 @@
         error (.-error result)
         data (.-data result)]
     (cond
-      loading [:p "Loading..."]
-      error [:p (str "Error: " (.-message error))]
-      :else [:ul
+      loading [:p.text-gray-500 "Loading..."]
+      error [:p.text-red-500 (str "Error: " (.-message error))]
+      :else [:ul.space-y-2
              (for [edge (-> data .-projects .-edges)]
                (let [node (.-node edge)]
-                 [:li {:key (.-id node)} (.-name node)]))])))
+                 [:li.p-2.bg-gray-100.rounded.hover:bg-gray-200.cursor-pointer
+                  {:key (.-id node)}
+                  (.-name node)]))])))
 
 (defn App []
   [:> apollo.react/ApolloProvider {:client apollo-client}
-   [:div
-    [:h1 "Claude Code Dashboard"]
+   [:div.min-h-screen.bg-white.p-8
+    [:h1.text-3xl.font-bold.mb-6 "Claude Code Dashboard"]
     [:f> ProjectList]]])
 
 (defonce root (-> js/document (.getElementById "app") reagent.dom.client/create-root))

@@ -9,24 +9,32 @@ repl:
 update:
 	clojure -Sdeps '{:deps {com.github.liquidz/antq {:mvn/version "RELEASE"}}}' -M -m antq.core --upgrade --force
 
+.PHONY: build-css
+build-css:
+	pnpm exec postcss resources/public/css/main.css -o resources-dev/public/dist/css/main.css
+
+.PHONY: watch-css
+watch-css:
+	pnpm exec postcss resources/public/css/main.css -o resources-dev/public/dist/css/main.css --watch
+
 .PHONY: release-frontend
 release-frontend:
-	npx shadow-cljs release frontend
+	pnpm exec shadow-cljs release frontend
 
 .PHONY: release-backend
 release-backend:
-	npx shadow-cljs release backend
+	pnpm exec shadow-cljs release backend
 
 .PHONY: release
 release: release-frontend release-backend
 
 .PHONY: test-frontend
 test-frontend:
-	npx shadow-cljs compile test-frontend
+	pnpm exec shadow-cljs compile test-frontend
 
 .PHONY: test-backend
 test-backend:
-	npx shadow-cljs compile test-backend
+	pnpm exec shadow-cljs compile test-backend
 
 .PHONY: test
 test: test-frontend test-backend

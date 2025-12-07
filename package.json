@@ -33,6 +33,10 @@
     "ws": "^7.3.1"
   },
   "devDependencies": {
-    "shadow-cljs": "^3.3.2"
+    "@tailwindcss/postcss": "^4.1.17",
+    "postcss": "^8.5.6",
+    "postcss-cli": "^11.0.1",
+    "shadow-cljs": "^3.3.2",
+    "tailwindcss": "^4.1.17"
   }
 }
