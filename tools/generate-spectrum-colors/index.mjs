@@ -8,17 +8,29 @@ const ROOT_DIR = resolve(__dirname, "../..");
 const OUTPUT_PATH = resolve(ROOT_DIR, "resources/public/css/spectrum-colors.css");
 
 const THEME = "dark";
+const TOKEN_FILES = [
+  "color-palette.json",
+  "semantic-color-palette.json",
+  "color-aliases.json",
+];
 
-const colorPalette = await getFileTokens("color-palette.json");
+const stripSuffix = (name) => name.replace(/-color$/, "").replace(/-default$/, "");
+const resolveRef = (val) => val.replace(/\{([^}]+)\}/g, (_, ref) => `var(--color-${stripSuffix(ref)})`);
 
 const cssLines = ["@theme {"];
-for (const [key, value] of Object.entries(colorPalette)) {
-  if (value.value != null) {
-    cssLines.push(`  --color-${key}: ${value.value};`);
-  } else if (value.sets?.[THEME]?.value) {
-    cssLines.push(`  --color-${key}: ${value.sets[THEME].value};`);
+
+for (const file of TOKEN_FILES) {
+  cssLines.push("");
+  cssLines.push(`  /* ${file} */`);
+  const tokens = await getFileTokens(file);
+  for (const [key, value] of Object.entries(tokens)) {
+    const rawValue = value.value ?? value.sets?.[THEME]?.value;
+    if (rawValue != null && typeof rawValue !== "object") {
+      cssLines.push(`  --color-${stripSuffix(key)}: ${resolveRef(String(rawValue))};`);
+    }
   }
 }
+
 cssLines.push("}");
 cssLines.push("");
 

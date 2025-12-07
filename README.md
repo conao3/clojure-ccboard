@@ -56,3 +56,67 @@ Then open http://localhost:8000/
 ## Proxy
 
 In development, requests to `http://localhost:8000/api/*` are proxied to `http://localhost:4000/api/*`.
+
+## Styling with Spectrum Design Tokens
+
+This project uses [Adobe Spectrum Design Tokens](https://github.com/adobe/spectrum-design-data) integrated with Tailwind CSS. The tokens are generated from `@adobe/spectrum-tokens` package and converted to Tailwind-compatible CSS custom properties.
+
+### Color Sources
+
+Colors are generated from three token files:
+
+| File | Description |
+|------|-------------|
+| `color-palette.json` | Base colors (gray, blue, red, etc.) |
+| `semantic-color-palette.json` | Semantic colors (accent, informative, negative, etc.) |
+| `color-aliases.json` | Contextual aliases (background, content, border colors) |
+
+### Usage Examples
+
+#### Background Colors
+
+```clojure
+:div.bg-background-base-color      ; Base background
+:div.bg-background-layer-1-color   ; Layer 1 background
+:div.bg-background-layer-2-color   ; Layer 2 background
+```
+
+#### Text Colors
+
+```clojure
+:p.text-neutral-content-color-default   ; Default text
+:p.text-accent-content-color-default    ; Accent text
+:p.text-negative-color-900              ; Error text
+```
+
+#### Semantic Colors
+
+```clojure
+:div.bg-accent-color-900        ; Accent (blue)
+:div.bg-informative-color-900   ; Informative (blue)
+:div.bg-negative-color-900      ; Negative/Error (red)
+:div.bg-positive-color-900      ; Positive/Success (green)
+:div.bg-notice-color-900        ; Notice/Warning (orange)
+```
+
+#### Base Colors
+
+```clojure
+:div.bg-gray-100   ; Gray scale (25-1000)
+:div.bg-blue-900   ; Blue scale
+:div.bg-red-900    ; Red scale
+```
+
+### Regenerating Colors
+
+To regenerate `resources/public/css/spectrum-colors.css`:
+
+```bash
+make generate-spectrum-colors
+```
+
+The theme is set to "dark" by default. To change it, edit `THEME` in `tools/generate-spectrum-colors/index.mjs`.
+
+### Color Reference
+
+You can browse all available colors at the [Spectrum Design Tokens Viewer](https://opensource.adobe.com/spectrum-design-data/s2-tokens-viewer).
