@@ -48,8 +48,7 @@
                    :sessionId session-id
                    :createdAt created-at})))
          (sort-by :createdAt)
-         (reverse)
-         (vec))))
+         reverse)))
 
 (defn- list-projects []
   (let [claude-json (read-claude-json)]
