@@ -7,12 +7,57 @@
    ["@as-integrations/express5" :as apollo.express]
    ["cors" :as cors]
    ["express" :as express]
+   ["node:fs" :as fs]
+   ["node:os" :as os]
+   ["node:path" :as path]
    [shadow.resource :as shadow.resource]))
 
 (defonce server-state (atom nil))
 
+(defn- encode-id [type raw-id]
+  (js/btoa (str type ":" raw-id)))
+
+(defn- decode-id [id]
+  (let [[type raw-id] (.split (js/atob id) ":")]
+    {:type type :raw-id raw-id}))
+
+(defn- read-claude-json []
+  (let [claude-json-path (.join path (.homedir os) ".claude.json")]
+    (-> (.readFileSync fs claude-json-path "utf-8")
+        (js/JSON.parse)
+        (js->clj :keywordize-keys true))))
+
+(defn- path->slug [p]
+  (.replace p (js/RegExp. "/" "g") "-"))
+
+(defn- list-projects []
+  (let [claude-json (read-claude-json)]
+    (->> (:projects claude-json)
+         (map (fn [[k _v]]
+                (let [project-path (subs (str k) 1)]
+                  {:id (encode-id "Project" project-path)
+                   :rawName (path->slug project-path)
+                   :name project-path}))))))
+
 (def resolvers
-  #js {:Query #js {:hello (fn [] "Hello from Apollo Server!")}})
+  #js {:Query #js {:hello (fn [] "Hello from Apollo Server!")
+                   :projects (fn []
+                               (let [projects (list-projects)]
+                                 #js {:edges (clj->js (map (fn [p] {:cursor (:id p) :node p}) projects))
+                                      :pageInfo #js {:hasNextPage false
+                                                     :hasPreviousPage false
+                                                     :startCursor (some-> (first projects) :id)
+                                                     :endCursor (some-> (last projects) :id)}}))
+                   :node (fn [_ args]
+                           (let [{:keys [type raw-id]} (decode-id (.-id args))]
+                             (case type
+                               "Project" (let [claude-json (read-claude-json)
+                                               project-path raw-id]
+                                           (when (get-in claude-json [:projects (keyword project-path)])
+                                             #js {:id (.-id args)
+                                                  :rawName (path->slug project-path)
+                                                  :name project-path}))
+                               nil)))}})
 
 (defn start-server []
   (let [type-defs (shadow.resource/inline "schema.graphql")

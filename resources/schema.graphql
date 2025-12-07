@@ -23,5 +23,6 @@ type Project implements Node {
 type Query {
   hello: String
   node(id: ID!): Node
+  "Currently all arguments are ignored"
   projects(first: Int, after: String, last: Int, before: String): ProjectConnection!
 }
