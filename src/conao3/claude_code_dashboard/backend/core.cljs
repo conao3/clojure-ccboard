@@ -84,15 +84,20 @@
        :sessionId session-id
        :messageId message-id
        :rawMessage line})
-    (catch :default _e nil)))
+    (catch :default _e
+      {:__typename "BrokenMessage"
+       :id (encode-id "Message" (str project-id "/" session-id "/" idx))
+       :projectId project-id
+       :sessionId session-id
+       :messageId (str idx)
+       :rawMessage line})))
 
 (defn- list-messages [project-id session-id]
   (let [file-path (.join path (projects-dir) project-id (str session-id ".jsonl"))
         content (try (.readFileSync fs file-path "utf-8") (catch :default _ ""))
         lines (->> (.split content "\n") (filter #(not= % "")))]
     (->> lines
-         (map-indexed (fn [idx line] (parse-message-line project-id session-id idx line)))
-         (filter :__typename))))
+         (map-indexed (fn [idx line] (parse-message-line project-id session-id idx line))))))
 
 (defn- messages-resolver [parent]
   (let [project-id (aget parent "projectId")

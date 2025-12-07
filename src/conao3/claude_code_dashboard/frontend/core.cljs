@@ -66,6 +66,12 @@
                 messageId
                 rawMessage
               }
+              ... on BrokenMessage {
+                __typename
+                id
+                messageId
+                rawMessage
+              }
             }
           }
         }
@@ -100,6 +106,13 @@
    [:pre.text-sm.font-mono.whitespace-pre-wrap.break-all
     (-> (:rawMessage message) js/JSON.parse yaml/dump)]])
 
+(defn BrokenMessage [{:keys [message]}]
+  [:li.p-2.rounded.bg-negative-background.text-white
+   {:key (:id message)}
+   [:div.text-xs.opacity-70.mb-1 (str "Broken: " (:messageId message))]
+   [:pre.text-sm.font-mono.whitespace-pre-wrap.break-all
+    (:rawMessage message)]])
+
 (defn MessageList []
   (let [session-id @selected-session-id
         result (apollo.react/useQuery session-messages-query #js {:variables #js {:id session-id}
@@ -126,6 +139,7 @@
                "AssistantMessage" [AssistantMessage {:key (:id message) :message message}]
                "UserMessage" [UserMessage {:key (:id message) :message message}]
                "UnknownMessage" [UnknownMessage {:key (:id message) :message message}]
+               "BrokenMessage" [BrokenMessage {:key (:id message) :message message}]
                nil))])))))
 
 (defn SessionList [sessions]

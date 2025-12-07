@@ -33,6 +33,14 @@ type UnknownMessage implements Node & Message {
   rawMessage: String!
 }
 
+type BrokenMessage implements Node & Message {
+  id: ID!
+  projectId: String!
+  sessionId: String!
+  messageId: String!
+  rawMessage: String!
+}
+
 type MessageConnection { edges: [MessageEdge!]! pageInfo: PageInfo! }
 type MessageEdge { cursor: String! node: Message! }
 interface Message {
