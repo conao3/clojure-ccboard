@@ -53,8 +53,17 @@
                 id
                 messageId
                 rawMessage
-                message {
-                  content
+                assistantMessage: message {
+                  content {
+                    type
+                    text
+                    thinking
+                    id
+                    name
+                    input
+                    tool_use_id
+                    content
+                  }
                 }
               }
               ... on UserMessage {
@@ -62,7 +71,7 @@
                 id
                 messageId
                 rawMessage
-                message {
+                userMessage: message {
                   content
                 }
               }
@@ -103,13 +112,42 @@
                     (js/setTimeout #(reset! copied? false) 1000))}
        (if @copied? "Copied!" (or label "Copy"))])))
 
+(defn ContentBlock [{:keys [block]}]
+  (case (:type block)
+    "text"
+    [:div.p-2.whitespace-pre-wrap.break-all (:text block)]
+
+    "thinking"
+    [:div.m-2.p-2.rounded.bg-background-layer-1.text-neutral-subdued-content
+     [:div.font-semibold "Thinking"]
+     [:pre.p-2.whitespace-pre-wrap.break-all (:thinking block)]]
+
+    "tool_use"
+    [:div.m-2.p-2.rounded.bg-background-layer-1
+     [:div.font-semibold (str "Tool: " (:name block))]
+     [:div.text-xs.opacity-70 (str "ID: " (:id block))]
+     (when (:input block)
+       [:pre.mt-2.p-2.whitespace-pre-wrap.break-all
+        (-> (:input block) js/JSON.parse yaml/dump)])]
+
+    "tool_result"
+    [:div.m-2.p-2.rounded.bg-background-layer-1
+     [:div.font-semibold "Tool Result"]
+     [:div.text-xs.opacity-70 (str "Tool Use ID: " (:tool_use_id block))]
+     (when (:content block)
+       [:pre.mt-2.p-2.whitespace-pre-wrap.break-all (:content block)])]
+
+    [:div.m-2.p-2.rounded.bg-notice-background.text-white
+     [:div.font-semibold (str "Unknown: " (:type block))]]))
+
 (defn AssistantMessage [{:keys [message]}]
   (let [yaml-text (-> (:rawMessage message) js/JSON.parse yaml/dump)
-        content (get-in message [:message :content])]
+        content-blocks (get-in message [:message :content])]
     [:li {:key (:id message)}
      [:details.rounded.bg-background-layer-2.border-l-4.border-transparent
       [:summary.p-2.cursor-pointer [:code (str "Assistant: " (:messageId message))]]
-      [:div.p-2.whitespace-pre-wrap.break-all content]
+      (for [[idx block] (map-indexed vector content-blocks)]
+        ^{:key idx} [ContentBlock {:block block}])
       [:details.m-2.p-2.rounded.bg-background-layer-1
        [:summary.cursor-pointer "Raw"]
        [:div.relative.group
@@ -171,13 +209,27 @@
       error [:p.text-negative-content (str "Error: " (.-message error))]
       :else
       (let [messages (for [edge (-> data .-node .-messages .-edges)]
-                       (let [^js node (.-node edge)]
+                       (let [^js node (.-node edge)
+                             assistant-msg (.-assistantMessage node)
+                             user-msg (.-userMessage node)]
                          {:__typename (.-__typename node)
                           :id (.-id node)
                           :messageId (.-messageId node)
                           :rawMessage (.-rawMessage node)
-                          :message (when-let [msg (.-message node)]
-                                     {:content (.-content msg)})}))]
+                          :message (cond
+                                     assistant-msg
+                                     {:content (mapv (fn [^js block]
+                                                       {:type (.-type block)
+                                                        :text (.-text block)
+                                                        :thinking (.-thinking block)
+                                                        :id (.-id block)
+                                                        :name (.-name block)
+                                                        :input (.-input block)
+                                                        :tool_use_id (.-tool_use_id block)
+                                                        :content (.-content block)})
+                                                     (.-content assistant-msg))}
+                                     user-msg
+                                     {:content (.-content user-msg)})}))]
         (if (empty? messages)
           [:p.text-neutral-subdued-content "No messages"]
           [:ul.space-y-2

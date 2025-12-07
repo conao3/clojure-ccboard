@@ -100,6 +100,17 @@
                         :disabled (boolean (:disabled tm))
                         :triggers (or (:triggers tm) [])})})
 
+(defn- parse-assistant-content-block [block]
+  {:type (:type block)
+   :text (:text block)
+   :thinking (:thinking block)
+   :signature (:signature block)
+   :id (:id block)
+   :name (:name block)
+   :input (when-let [input (:input block)] (js/JSON.stringify (clj->js input)))
+   :tool_use_id (:tool_use_id block)
+   :content (when-let [content (:content block)] (content->string content))})
+
 (defn- parse-assistant-message [data project-id session-id message-id line]
   (let [msg (:message data)
         usage (:usage msg)
@@ -122,7 +133,7 @@
                :messageId (:id msg)
                :type (:type msg)
                :role (:role msg)
-               :content (content->string (:content msg))
+               :content (map parse-assistant-content-block (:content msg))
                :stop_reason (:stop_reason msg)
                :stop_sequence (:stop_sequence msg)
                :usage {:input_tokens (:input_tokens usage)

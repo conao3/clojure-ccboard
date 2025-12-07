@@ -23,12 +23,24 @@ type AssistantMessageUsage {
   service_tier: String!
 }
 
+type AssistantMessageContent {
+  type: String!
+  text: String
+  thinking: String
+  signature: String
+  id: String
+  name: String
+  input: String
+  tool_use_id: String
+  content: String
+}
+
 type AssistantMessageMessage {
   model: String!
   messageId: String!
   type: String!
   role: String!
-  content: String!
+  content: [AssistantMessageContent!]!
   stop_reason: String
   stop_sequence: String
   usage: AssistantMessageUsage!
