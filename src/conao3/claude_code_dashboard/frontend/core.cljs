@@ -10,21 +10,27 @@
   (apollo/ApolloClient. #js {:link (apollo/HttpLink. #js {:uri "/api/graphql"})
                              :cache (apollo/InMemoryCache.)}))
 
-(defn HelloMessage []
-  (let [result (apollo.react/useQuery (apollo/gql "query Hello { hello }"))
+(def projects-query
+  (apollo/gql "query Projects { projects { edges { node { id name rawName } } } }"))
+
+(defn ProjectList []
+  (let [result (apollo.react/useQuery projects-query)
         loading (.-loading result)
         error (.-error result)
         data (.-data result)]
     (cond
       loading [:p "Loading..."]
       error [:p (str "Error: " (.-message error))]
-      :else [:p (.-hello data)])))
+      :else [:ul
+             (for [edge (-> data .-projects .-edges)]
+               (let [node (.-node edge)]
+                 [:li {:key (.-id node)} (.-name node)]))])))
 
 (defn App []
   [:> apollo.react/ApolloProvider {:client apollo-client}
    [:div
     [:h1 "Claude Code Dashboard"]
-    [:f> HelloMessage]]])
+    [:f> ProjectList]]])
 
 (defonce root (-> js/document (.getElementById "app") reagent.dom.client/create-root))
 
