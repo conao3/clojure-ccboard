@@ -14,7 +14,7 @@ const TOKEN_FILES = [
   "color-aliases.json",
 ];
 
-const stripSuffix = (name) => name.replace(/-color$/, "").replace(/-default$/, "");
+const stripSuffix = (name) => name.replace(/-color(-|$)/g, "$1").replace(/-default(-|$)/g, "$1");
 const resolveRef = (val) => val.replace(/\{([^}]+)\}/g, (_, ref) => `var(--color-${stripSuffix(ref)})`);
 
 const cssLines = ["@theme {"];

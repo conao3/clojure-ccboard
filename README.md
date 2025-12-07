@@ -76,27 +76,27 @@ Colors are generated from three token files:
 #### Background Colors
 
 ```clojure
-:div.bg-background-base-color      ; Base background
-:div.bg-background-layer-1-color   ; Layer 1 background
-:div.bg-background-layer-2-color   ; Layer 2 background
+:div.bg-background-base      ; Base background
+:div.bg-background-layer-1   ; Layer 1 background
+:div.bg-background-layer-2   ; Layer 2 background
 ```
 
 #### Text Colors
 
 ```clojure
-:p.text-neutral-content-color-default   ; Default text
-:p.text-accent-content-color-default    ; Accent text
-:p.text-negative-color-900              ; Error text
+:p.text-neutral-content   ; Default text
+:p.text-accent-content    ; Accent text
+:p.text-negative-900      ; Error text
 ```
 
 #### Semantic Colors
 
 ```clojure
-:div.bg-accent-color-900        ; Accent (blue)
-:div.bg-informative-color-900   ; Informative (blue)
-:div.bg-negative-color-900      ; Negative/Error (red)
-:div.bg-positive-color-900      ; Positive/Success (green)
-:div.bg-notice-color-900        ; Notice/Warning (orange)
+:div.bg-accent-900        ; Accent (blue)
+:div.bg-informative-900   ; Informative (blue)
+:div.bg-negative-900      ; Negative/Error (red)
+:div.bg-positive-900      ; Positive/Success (green)
+:div.bg-notice-900        ; Notice/Warning (orange)
 ```
 
 #### Base Colors
