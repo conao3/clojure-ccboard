@@ -53,6 +53,9 @@
                 id
                 messageId
                 rawMessage
+                message {
+                  content
+                }
               }
               ... on UserMessage {
                 __typename
@@ -101,10 +104,12 @@
        (if @copied? "Copied!" (or label "Copy"))])))
 
 (defn AssistantMessage [{:keys [message]}]
-  (let [yaml-text (-> (:rawMessage message) js/JSON.parse yaml/dump)]
+  (let [yaml-text (-> (:rawMessage message) js/JSON.parse yaml/dump)
+        content (get-in message [:message :content])]
     [:li {:key (:id message)}
      [:details.rounded.bg-background-layer-2.border-l-4.border-transparent
       [:summary.p-2.cursor-pointer [:code (str "Assistant: " (:messageId message))]]
+      [:div.p-2.whitespace-pre-wrap.break-all content]
       [:details.m-2.p-2.rounded.bg-background-layer-1
        [:summary.cursor-pointer "Raw"]
        [:div.relative.group

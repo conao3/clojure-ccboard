@@ -9,20 +9,55 @@ type PageInfo {
   endCursor: String
 }
 
+type CacheCreation {
+  ephemeral_5m_input_tokens: Int!
+  ephemeral_1h_input_tokens: Int!
+}
+
+type AssistantMessageUsage {
+  input_tokens: Int!
+  cache_creation_input_tokens: Int!
+  cache_read_input_tokens: Int!
+  cache_creation: CacheCreation
+  output_tokens: Int!
+  service_tier: String!
+}
+
+type AssistantMessageMessage {
+  model: String!
+  messageId: String!
+  type: String!
+  role: String!
+  content: String!
+  stop_reason: String
+  stop_sequence: String
+  usage: AssistantMessageUsage!
+}
+
 type AssistantMessage implements Node & Message {
   id: ID!
   projectId: String!
   sessionId: String!
   messageId: String!
   rawMessage: String!
+
+  cwd: String!
+  gitBranch: String
+  isSidechain: Boolean!
+  message: AssistantMessageMessage!
+  parentUuid: String
+  requestId: String!
+  timestamp: String!
+  userType: String!
+  version: String!
 }
 
-type UserMessageContent {
+type UserMessageMessage {
   role: String!
   content: String!
 }
 
-type ThinkingMetadata {
+type UserMessageThinkingMetadata {
   level: String!
   disabled: Boolean!
   triggers: [String!]!
@@ -34,16 +69,16 @@ type UserMessage implements Node & Message {
   sessionId: String!
   messageId: String!
   rawMessage: String!
-  parentUuid: String
-  isSidechain: Boolean!
-  userType: String!
+
   cwd: String!
-  version: String!
   gitBranch: String
-  uuid: String!
+  isSidechain: Boolean!
+  message: UserMessageMessage!
+  parentUuid: String
+  thinkingMetadata: UserMessageThinkingMetadata
   timestamp: String!
-  message: UserMessageContent!
-  thinkingMetadata: ThinkingMetadata
+  userType: String!
+  version: String!
 }
 
 type UnknownMessage implements Node & Message {

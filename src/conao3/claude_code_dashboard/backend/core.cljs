@@ -92,7 +92,6 @@
    :cwd (:cwd data)
    :version (:version data)
    :gitBranch (:gitBranch data)
-   :uuid (:uuid data)
    :timestamp (:timestamp data)
    :message {:role (get-in data [:message :role])
              :content (content->string (get-in data [:message :content]))}
@@ -101,18 +100,47 @@
                         :disabled (boolean (:disabled tm))
                         :triggers (or (:triggers tm) [])})})
 
+(defn- parse-assistant-message [data project-id session-id message-id line]
+  (let [msg (:message data)
+        usage (:usage msg)
+        cache-creation (:cache_creation usage)]
+    {:__typename "AssistantMessage"
+     :id (encode-id "Message" (str project-id "/" session-id "/" message-id))
+     :projectId project-id
+     :sessionId session-id
+     :messageId message-id
+     :rawMessage line
+     :parentUuid (:parentUuid data)
+     :isSidechain (boolean (:isSidechain data))
+     :userType (:userType data)
+     :cwd (:cwd data)
+     :version (:version data)
+     :gitBranch (:gitBranch data)
+     :requestId (:requestId data)
+     :timestamp (:timestamp data)
+     :message {:model (:model msg)
+               :messageId (:id msg)
+               :type (:type msg)
+               :role (:role msg)
+               :content (content->string (:content msg))
+               :stop_reason (:stop_reason msg)
+               :stop_sequence (:stop_sequence msg)
+               :usage {:input_tokens (:input_tokens usage)
+                       :cache_creation_input_tokens (:cache_creation_input_tokens usage)
+                       :cache_read_input_tokens (:cache_read_input_tokens usage)
+                       :cache_creation (when cache-creation
+                                         {:ephemeral_5m_input_tokens (:ephemeral_5m_input_tokens cache-creation)
+                                          :ephemeral_1h_input_tokens (:ephemeral_1h_input_tokens cache-creation)})
+                       :output_tokens (:output_tokens usage)
+                       :service_tier (:service_tier usage)}}}))
+
 (defn- parse-message-line [project-id session-id idx line]
   (try
     (let [data (js->clj (js/JSON.parse line) :keywordize-keys true)
           message-id (or (:uuid data) (:messageId data) (str idx))]
       (case (:type data)
         "user" (parse-user-message data project-id session-id message-id line)
-        "assistant" {:__typename "AssistantMessage"
-                     :id (encode-id "Message" (str project-id "/" session-id "/" message-id))
-                     :projectId project-id
-                     :sessionId session-id
-                     :messageId message-id
-                     :rawMessage line}
+        "assistant" (parse-assistant-message data project-id session-id message-id line)
         {:__typename "UnknownMessage"
          :id (encode-id "Message" (str project-id "/" session-id "/" message-id))
          :projectId project-id
