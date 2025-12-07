@@ -74,13 +74,15 @@
           [:h2.text-xl.font-semibold.mb-4 "Projects"]
           [:ul.space-y-2
            (for [project projects]
-             [:li.p-3.rounded.cursor-pointer
-              {:key (:id project)
-               :class (if (= (:id project) selected-id)
-                        "bg-accent-background text-white"
-                        "bg-background-layer-2 text-neutral-content hover:bg-gray-200")
-               :on-click #(reset! selected-project-id (:id project))}
-              (:name project)])]]
+             (let [has-sessions? (seq (:sessions project))]
+               [:li.p-3.rounded
+                {:key (:id project)
+                 :class (cond
+                          (not has-sessions?) "bg-disabled-background text-disabled-content"
+                          (= (:id project) selected-id) "bg-accent-background text-white cursor-pointer"
+                          :else "bg-background-layer-2 text-neutral-content hover:bg-gray-200 cursor-pointer")
+                 :on-click (when has-sessions? #(reset! selected-project-id (:id project)))}
+                (:name project)]))]]
          [:div {:class "w-2/3"}
           [:h2.text-xl.font-semibold.mb-4 "Sessions"]
           (if selected-project
