@@ -13,6 +13,12 @@
 (def projects-query
   (apollo/gql "query Projects { projects { edges { node { id name rawName } } } }"))
 
+(defn FlexCol [& children]
+  (into [:div.flex.flex-col] children))
+
+(defn FlexRow [& children]
+  (into [:div.flex.flex-row] children))
+
 (defn ProjectList []
   (let [result (apollo.react/useQuery projects-query)
         loading (.-loading result)
@@ -30,9 +36,10 @@
 
 (defn App []
   [:> apollo.react/ApolloProvider {:client apollo-client}
-   [:div.min-h-screen.bg-background-base.text-neutral-content.p-8
-    [:h1.text-3xl.font-bold.mb-6.text-accent-content "Claude Code Dashboard"]
-    [:f> ProjectList]]])
+   [FlexCol
+    [:div.min-h-screen.bg-background-base.text-neutral-content.p-8
+     [:h1.text-3xl.font-bold.mb-6.text-accent-content "Claude Code Dashboard"]
+     [:f> ProjectList]]]])
 
 (defonce root (-> js/document (.getElementById "app") reagent.dom.client/create-root))
 
