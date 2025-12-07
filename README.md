@@ -4,23 +4,36 @@ Claude Code Dashboard - ClojureScript frontend with Apollo GraphQL backend.
 
 ## Development
 
-### Start shadow-cljs server
+### Quick Start
 
 ```bash
-pnpm exec shadow-cljs server
+make server          # Terminal 1: Start shadow-cljs server
+make watch           # Terminal 2: Start watch builds
+make watch-css       # Terminal 3: Watch CSS changes
+make run-backend     # Terminal 4: Start backend server
 ```
 
-### Start watch builds (in another terminal)
+Then open http://localhost:8000/
 
-```bash
-pnpm exec shadow-cljs watch :frontend :backend :test-frontend :test-backend
-```
+## Make Targets
 
-### Start backend server (in another terminal)
-
-```bash
-make run-backend
-```
+| Target | Description |
+|--------|-------------|
+| `make server` | Start shadow-cljs server |
+| `make watch` | Start watch builds for frontend, backend, and tests |
+| `make run-backend` | Start backend server |
+| `make build-css` | Build CSS (generates spectrum colors and runs PostCSS) |
+| `make watch-css` | Watch CSS changes |
+| `make generate-spectrum-colors` | Generate `resources/public/css/spectrum-colors.css` from Spectrum Design Tokens |
+| `make repl` | Start Clojure REPL |
+| `make test` | Run all tests |
+| `make test-frontend` | Run frontend tests |
+| `make test-backend` | Run backend tests |
+| `make release` | Build release for frontend and backend |
+| `make release-frontend` | Build release for frontend |
+| `make release-backend` | Build release for backend |
+| `make update` | Update dependencies |
+| `make clean` | Clean build artifacts |
 
 ## Ports
 

@@ -1,6 +1,14 @@
 .PHONY: all
 all:
 
+.PHONY: server
+server:
+	pnpm exec shadow-cljs server
+
+.PHONY: watch
+watch:
+	pnpm exec shadow-cljs watch :frontend :backend :test-frontend :test-backend
+
 .PHONY: repl
 repl:
 	clj -M:dev:repl
@@ -9,8 +17,12 @@ repl:
 update:
 	clojure -Sdeps '{:deps {com.github.liquidz/antq {:mvn/version "RELEASE"}}}' -M -m antq.core --upgrade --force
 
+.PHONY: generate-spectrum-colors
+generate-spectrum-colors:
+	pnpm exec node tools/generate-spectrum-colors/index.mjs
+
 .PHONY: build-css
-build-css:
+build-css: generate-spectrum-colors
 	pnpm exec postcss resources/public/css/main.css -o resources-dev/public/dist/css/main.css
 
 .PHONY: watch-css

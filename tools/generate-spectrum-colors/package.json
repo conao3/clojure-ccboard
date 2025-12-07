@@ -1,0 +1,12 @@
+{
+  "name": "generate-spectrum-colors",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "main": "index.mjs",
+  "dependencies": {
+    "@adobe/spectrum-tokens": "^14.0.0",
+    "glob": "^13.0.0",
+    "prettier": "^3.7.4"
+  }
+}
