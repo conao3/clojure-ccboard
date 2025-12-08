@@ -28,7 +28,7 @@ find ~/.claude/projects -name "*.jsonl" -not -name "agent-*" -exec cat {} \; | \
 |------:|------|--------|
 | 4745 | `assistant` | [x] |
 | 2507 | `user` | [x] |
-| 390 | `file-history-snapshot` | [ ] |
-| 58 | `queue-operation` | [ ] |
-| 17 | `system` | [ ] |
+| 390 | `file-history-snapshot` | [x] |
+| 58 | `queue-operation` | [x] |
+| 17 | `system` | [x] |
 | 5 | `summary` | [ ] |

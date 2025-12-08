@@ -90,6 +90,17 @@
                 content
                 queueSessionId
               }
+              ... on SystemMessage {
+                subtype
+                systemContent: content
+                isMeta
+                timestamp
+                level
+                compactMetadata {
+                  trigger
+                  preTokens
+                }
+              }
             }
           }
         }
@@ -266,6 +277,29 @@
          [CopyButton {:text (:rawMessage message) :label "Copy Raw"}]]
         [:pre.p-2.whitespace-pre-wrap.break-all yaml-text]]]]]))
 
+(defn SystemMessage [{:keys [message]}]
+  (let [yaml-text (-> (:rawMessage message) js/JSON.parse yaml/dump)
+        compact-metadata (:compactMetadata message)]
+    [:li {:key (:id message)}
+     [:details.rounded.bg-background-layer-2.border-l-4.border-informative-background.opacity-50
+      [:summary.p-2.cursor-pointer
+       [:code (str "System: " (:subtype message))]]
+      [:div.m-2.p-2.rounded.bg-background-layer-1
+       [:div.text-sm [:span.font-semibold "Content: "] (:systemContent message)]
+       [:div.text-xs.opacity-70 (str "Level: " (:level message))]
+       [:div.text-xs.opacity-70 (str "Timestamp: " (:timestamp message))]
+       (when compact-metadata
+         [:<>
+          [:div.text-xs.opacity-70 (str "Trigger: " (:trigger compact-metadata))]
+          [:div.text-xs.opacity-70 (str "Pre-tokens: " (:preTokens compact-metadata))]])]
+      [:details.m-2.p-2.rounded.bg-background-layer-1
+       [:summary.cursor-pointer "Raw"]
+       [:div.relative.group
+        [:div.absolute.top-1.right-1.flex.gap-1
+         [CopyButton {:text yaml-text :label "Copy"}]
+         [CopyButton {:text (:rawMessage message) :label "Copy Raw"}]]
+        [:pre.p-2.whitespace-pre-wrap.break-all yaml-text]]]]]))
+
 (defn MessageList []
   (let [session-id @selected-session-id
         result (apollo.react/useQuery session-messages-query #js {:variables #js {:id session-id}
@@ -295,6 +329,13 @@
                           :timestamp (.-timestamp node)
                           :content (.-content node)
                           :queueSessionId (.-queueSessionId node)
+                          :subtype (.-subtype node)
+                          :systemContent (.-systemContent node)
+                          :isMeta (.-isMeta node)
+                          :level (.-level node)
+                          :compactMetadata (when-let [cm (.-compactMetadata node)]
+                                             {:trigger (.-trigger cm)
+                                              :preTokens (.-preTokens cm)})
                           :message (cond
                                      assistant-msg
                                      {:content (mapv (fn [^js block]
@@ -338,6 +379,7 @@
                       "BrokenMessage" BrokenMessage
                       "FileHistorySnapshotMessage" FileHistorySnapshotMessage
                       "QueueOperationMessage" QueueOperationMessage
+                      "SystemMessage" SystemMessage
                       :div)
                     (case (:__typename message)
                       "AssistantMessage" {:message message :tool-results tool-results}

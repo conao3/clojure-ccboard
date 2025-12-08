@@ -183,6 +183,29 @@
    :content (:content data)
    :queueSessionId (:sessionId data)})
 
+(defn- parse-system-message [data project-id session-id message-id line]
+  {:__typename "SystemMessage"
+   :id (encode-id "Message" (str project-id "/" session-id "/" message-id))
+   :projectId project-id
+   :sessionId session-id
+   :messageId message-id
+   :rawMessage line
+   :parentUuid (:parentUuid data)
+   :logicalParentUuid (:logicalParentUuid data)
+   :isSidechain (boolean (:isSidechain data))
+   :userType (:userType data)
+   :cwd (:cwd data)
+   :version (:version data)
+   :gitBranch (:gitBranch data)
+   :subtype (:subtype data)
+   :content (:content data)
+   :isMeta (boolean (:isMeta data))
+   :timestamp (:timestamp data)
+   :level (:level data)
+   :compactMetadata (when-let [cm (:compactMetadata data)]
+                      {:trigger (:trigger cm)
+                       :preTokens (:preTokens cm)})})
+
 (defn- parse-message-line [project-id session-id idx line]
   (try
     (let [data (js->clj (js/JSON.parse line) :keywordize-keys true)
@@ -192,6 +215,7 @@
         "assistant" (parse-assistant-message data project-id session-id message-id line)
         "file-history-snapshot" (parse-file-history-snapshot-message data project-id session-id message-id line)
         "queue-operation" (parse-queue-operation-message data project-id session-id message-id line)
+        "system" (parse-system-message data project-id session-id message-id line)
         {:__typename "UnknownMessage"
          :id (encode-id "Message" (str project-id "/" session-id "/" message-id))
          :projectId project-id

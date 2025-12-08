@@ -150,6 +150,32 @@ type QueueOperationMessage implements Node & Message {
   queueSessionId: String!
 }
 
+type SystemMessageCompactMetadata {
+  trigger: String!
+  preTokens: Int!
+}
+
+type SystemMessage implements Node & Message {
+  id: ID!
+  projectId: String!
+  sessionId: String!
+  messageId: String!
+  rawMessage: String!
+  parentUuid: String
+  logicalParentUuid: String
+  isSidechain: Boolean!
+  userType: String!
+  cwd: String!
+  version: String!
+  gitBranch: String
+  subtype: String!
+  content: String!
+  isMeta: Boolean!
+  timestamp: String!
+  level: String!
+  compactMetadata: SystemMessageCompactMetadata
+}
+
 type MessageConnection { edges: [MessageEdge!]! pageInfo: PageInfo! }
 type MessageEdge { cursor: String! node: Message }
 interface Message {
