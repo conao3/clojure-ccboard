@@ -22,7 +22,8 @@ generate-spectrum-colors:
 	pnpm exec node tools/generate-spectrum-colors/index.mjs
 
 .PHONY: build-css
-build-css: generate-spectrum-colors
+build-css:
+	${MAKE} generate-spectrum-colors
 	pnpm exec postcss resources/public/css/main.css -o resources-dev/public/dist/css/main.css
 
 .PHONY: watch-css
@@ -38,7 +39,9 @@ release-backend:
 	pnpm exec shadow-cljs release backend
 
 .PHONY: release
-release: release-frontend release-backend
+release:
+	${MAKE} release-frontend
+	${MAKE} release-backend
 
 .PHONY: test-frontend
 test-frontend:
@@ -49,7 +52,9 @@ test-backend:
 	pnpm exec shadow-cljs compile test-backend
 
 .PHONY: test
-test: test-frontend test-backend
+test:
+	${MAKE} test-frontend
+	${MAKE} test-backend
 
 .PHONY: run-backend
 run-backend:
@@ -70,7 +75,9 @@ ci-frontend:
 	pnpm install --frozen-lockfile
 
 .PHONY: ci-integration
-ci-integration: ci-frontend validate-graphql
+ci-integration:
+	${MAKE} ci-frontend
+	${MAKE} validate-graphql
 
 .PHONY: clean
 clean:
