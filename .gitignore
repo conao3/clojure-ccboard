@@ -3,4 +3,4 @@
 /.lsp
 /target
 /.shadow-cljs
-/node_modules
+node_modules
