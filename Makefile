@@ -58,11 +58,11 @@ test:
 
 .PHONY: run-backend
 run-backend:
-	node resources-dev/backend/main.js
+	pnpm exec node resources-dev/backend/main.js
 
 .PHONY: validate-graphql
 validate-graphql:
-	node tools/validate-graphql/validate.mjs
+	pnpm exec node tools/validate-graphql/validate.mjs
 
 ### CI targets
 
