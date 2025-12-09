@@ -15,11 +15,9 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Install Nix
-        uses: nixbuild/nix-quick-install-action@v30
+      - uses: nixbuild/nix-quick-install-action@v30
 
-      - name: Setup Nix cache
-        uses: nix-community/cache-nix-action@v6
+      - uses: nix-community/cache-nix-action@v6
         with:
           primary-key: nix-${{ runner.os }}-${{ hashFiles('flake.lock') }}
           restore-prefixes-first-match: nix-${{ runner.os }}-
@@ -27,8 +25,7 @@ jobs:
           purge-prefixes: nix-${{ runner.os }}-
           purge-created: 0
 
-      - name: Resolve Clojure dependencies
-        run: nix develop --command make ci-backend
+      - run: nix develop --command make ci-backend
 
   frontend:
     name: Frontend Dependencies
@@ -39,11 +36,9 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Install Nix
-        uses: nixbuild/nix-quick-install-action@v30
+      - uses: nixbuild/nix-quick-install-action@v30
 
-      - name: Setup Nix cache
-        uses: nix-community/cache-nix-action@v6
+      - uses: nix-community/cache-nix-action@v6
         with:
           primary-key: nix-${{ runner.os }}-${{ hashFiles('flake.lock') }}
           restore-prefixes-first-match: nix-${{ runner.os }}-
@@ -51,8 +46,7 @@ jobs:
           purge-prefixes: nix-${{ runner.os }}-
           purge-created: 0
 
-      - name: Resolve npm dependencies
-        run: nix develop --command make ci-frontend
+      - run: nix develop --command make ci-frontend
 
   integration:
     name: Integration (GraphQL Validation)
@@ -64,11 +58,9 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Install Nix
-        uses: nixbuild/nix-quick-install-action@v30
+      - uses: nixbuild/nix-quick-install-action@v30
 
-      - name: Setup Nix cache
-        uses: nix-community/cache-nix-action@v6
+      - uses: nix-community/cache-nix-action@v6
         with:
           primary-key: nix-${{ runner.os }}-${{ hashFiles('flake.lock') }}
           restore-prefixes-first-match: nix-${{ runner.os }}-
@@ -76,5 +68,4 @@ jobs:
           purge-prefixes: nix-${{ runner.os }}-
           purge-created: 0
 
-      - name: Run integration tests
-        run: nix develop --command make ci-integration
+      - run: nix develop --command make ci-integration
