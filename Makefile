@@ -7,7 +7,7 @@ server:
 
 .PHONY: watch
 watch:
-	pnpm exec shadow-cljs watch :frontend :backend :test-frontend :test-backend
+	pnpm exec shadow-cljs watch :frontend :backend :test-frontend :test-backend :portfolio
 
 .PHONY: repl
 repl:
@@ -29,22 +29,6 @@ build-css:
 .PHONY: watch-css
 watch-css:
 	pnpm exec postcss resources/public/css/main.css -o resources-dev/public/dist/css/main.css --watch
-
-.PHONY: storybook
-storybook:
-	pnpm exec storybook dev -p 6006
-
-.PHONY: build-storybook
-build-storybook:
-	pnpm exec storybook build
-
-.PHONY: watch-storybook
-watch-storybook:
-	pnpm exec shadow-cljs watch :storybook
-
-.PHONY: compile-storybook
-compile-storybook:
-	pnpm exec shadow-cljs compile :storybook
 
 .PHONY: release-frontend
 release-frontend:
@@ -97,4 +81,4 @@ ci-integration:
 
 .PHONY: clean
 clean:
-	rm -rf target .shadow-cljs .cpcache resources-dev/public/dist resources-dev/backend
+	rm -rf target .shadow-cljs .cpcache resources-dev/public/dist resources-dev/backend resources-portfolio/public/js

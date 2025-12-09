@@ -1,30 +1,15 @@
 {:deps {:aliases [:dev :cljs]}
  :dev-http {8000 {:roots ["resources-dev/public" "resources/public"]
                   :proxy-url "http://localhost:4000"
-                  :proxy-predicate dev/api-route?}}
+                  :proxy-predicate dev/api-route?}
+            9500 {:roots ["resources-portfolio/public" "resources-dev/public" "resources/public" "classpath:public"]}}
  :nrepl {:init-ns user}
  :builds
- {:storybook
-  {:target :esm
-   :output-dir "resources-storybook/js"
-   :modules {:stories {:exports {NavItem conao3.claude-code-dashboard.storybook.stories/NavItem
-                                 ProjectItem conao3.claude-code-dashboard.storybook.stories/ProjectItem
-                                 SessionItem conao3.claude-code-dashboard.storybook.stories/SessionItem
-                                 CopyButton conao3.claude-code-dashboard.storybook.stories/CopyButton
-                                 ToolResultBlock conao3.claude-code-dashboard.storybook.stories/ToolResultBlock
-                                 ContentBlock conao3.claude-code-dashboard.storybook.stories/ContentBlock
-                                 MessageBubble conao3.claude-code-dashboard.storybook.stories/MessageBubble
-                                 AssistantMessage conao3.claude-code-dashboard.storybook.stories/AssistantMessage
-                                 UserMessage conao3.claude-code-dashboard.storybook.stories/UserMessage
-                                 SystemMessageItem conao3.claude-code-dashboard.storybook.stories/SystemMessageItem
-                                 SummaryMessageItem conao3.claude-code-dashboard.storybook.stories/SummaryMessageItem
-                                 FileHistorySnapshotMessage conao3.claude-code-dashboard.storybook.stories/FileHistorySnapshotMessage
-                                 QueueOperationMessage conao3.claude-code-dashboard.storybook.stories/QueueOperationMessage
-                                 UnknownMessage conao3.claude-code-dashboard.storybook.stories/UnknownMessage
-                                 BrokenMessage conao3.claude-code-dashboard.storybook.stories/BrokenMessage
-                                 Sidebar conao3.claude-code-dashboard.storybook.stories/Sidebar
-                                 SessionsPanel conao3.claude-code-dashboard.storybook.stories/SessionsPanel
-                                 MessagesPanel conao3.claude-code-dashboard.storybook.stories/MessagesPanel}}}}
+ {:portfolio
+  {:target :browser
+   :output-dir "resources-portfolio/public/js"
+   :asset-path "/js"
+   :modules {:main {:init-fn conao3.claude-code-dashboard.portfolio.core/start}}}
 
   :frontend
   {:target :browser
