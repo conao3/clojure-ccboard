@@ -59,14 +59,49 @@
                    :projectId (path->slug project-path)
                    :name project-path}))))))
 
-(defn- sessions-resolver [parent]
-  (let [project-id (aget parent "projectId")
-        sessions (list-sessions project-id)]
-    #js {:edges (clj->js (map (fn [s] {:cursor (:id s) :node s}) sessions))
-         :pageInfo #js {:hasNextPage false
-                        :hasPreviousPage false
-                        :startCursor (some-> (first sessions) :id)
-                        :endCursor (some-> (last sessions) :id)}}))
+(defn- find-cursor-idx [items cursor]
+  (when cursor
+    (->> items
+         (keep-indexed (fn [idx item] (when (= (:id item) cursor) idx)))
+         first)))
+
+(defn- paginate [all-items ^js args]
+  (let [first-n (.-first args)
+        after-cursor (.-after args)
+        last-n (.-last args)
+        before-cursor (.-before args)
+        all-items (vec all-items)
+        after-idx (find-cursor-idx all-items after-cursor)
+        before-idx (find-cursor-idx all-items before-cursor)
+        filtered-items (cond
+                         (and after-idx before-idx)
+                         (subvec all-items (inc after-idx) before-idx)
+
+                         after-idx
+                         (subvec all-items (inc after-idx))
+
+                         before-idx
+                         (subvec all-items 0 before-idx)
+
+                         :else
+                         all-items)
+        items (cond
+                first-n (vec (take first-n filtered-items))
+                last-n (vec (take-last last-n filtered-items))
+                :else filtered-items)
+        has-next-page (boolean (or (some? before-idx)
+                                   (and first-n (> (count filtered-items) (count items)))))
+        has-previous-page (boolean (or (some? after-idx)
+                                       (and last-n (> (count filtered-items) (count items)))))]
+    #js {:edges (clj->js (map (fn [item] {:cursor (:id item) :node item}) items))
+         :pageInfo #js {:hasNextPage has-next-page
+                        :hasPreviousPage has-previous-page
+                        :startCursor (some-> (first items) :id)
+                        :endCursor (some-> (last items) :id)}}))
+
+(defn- sessions-resolver [parent args]
+  (-> (list-sessions (aget parent "projectId"))
+      (paginate args)))
 
 (defn- message-type->typename [type]
   (case type
@@ -248,58 +283,15 @@
     (->> lines
          (map-indexed (fn [idx line] (parse-message-line project-id session-id idx line))))))
 
-(defn- find-cursor-idx [messages cursor]
-  (when cursor
-    (->> messages
-         (keep-indexed (fn [idx m] (when (= (:id m) cursor) idx)))
-         first)))
-
-(defn- messages-resolver [parent ^js args]
-  (let [project-id (aget parent "projectId")
-        session-id (aget parent "sessionId")
-        first-n (.-first args)
-        after-cursor (.-after args)
-        last-n (.-last args)
-        before-cursor (.-before args)
-        all-messages (vec (list-messages project-id session-id))
-        after-idx (find-cursor-idx all-messages after-cursor)
-        before-idx (find-cursor-idx all-messages before-cursor)
-        filtered-messages (cond
-                            (and after-idx before-idx)
-                            (subvec all-messages (inc after-idx) before-idx)
-
-                            after-idx
-                            (subvec all-messages (inc after-idx))
-
-                            before-idx
-                            (subvec all-messages 0 before-idx)
-
-                            :else
-                            all-messages)
-        messages (cond
-                   first-n (vec (take first-n filtered-messages))
-                   last-n (vec (take-last last-n filtered-messages))
-                   :else filtered-messages)
-        has-next-page (boolean (or (some? before-idx)
-                                   (and first-n (> (count filtered-messages) (count messages)))))
-        has-previous-page (boolean (or (some? after-idx)
-                                       (and last-n (> (count filtered-messages) (count messages)))))]
-    #js {:edges (clj->js (map (fn [m] {:cursor (:id m) :node m}) messages))
-         :pageInfo #js {:hasNextPage has-next-page
-                        :hasPreviousPage has-previous-page
-                        :startCursor (some-> (first messages) :id)
-                        :endCursor (some-> (last messages) :id)}}))
+(defn- messages-resolver [parent args]
+  (-> (list-messages (aget parent "projectId") (aget parent "sessionId"))
+      (paginate args)))
 
 (def resolvers
   (clj->js
    {"Query" {"hello" (fn [] "Hello from Apollo Server!")
-             "projects" (fn []
-                          (let [projects (list-projects)]
-                            #js {:edges (clj->js (map (fn [p] {:cursor (:id p) :node p}) projects))
-                                 :pageInfo #js {:hasNextPage false
-                                                :hasPreviousPage false
-                                                :startCursor (some-> (first projects) :id)
-                                                :endCursor (some-> (last projects) :id)}}))
+             "projects" (fn [_ args]
+                          (paginate (list-projects) args))
              "node" (fn [_ args]
                       (let [{:keys [type raw-id]} (decode-id (.-id args))]
                         (case type
