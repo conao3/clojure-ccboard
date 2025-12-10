@@ -38,4 +38,9 @@
   :test-backend
   {:target :node-test
    :output-to "target/test/backend/test.js"
-   :ns-regexp "conao3.claude-code-dashboard.backend.*-test$"}}}
+   :ns-regexp "conao3.claude-code-dashboard.backend.*-test$"}
+
+  :test-lib
+  {:target :node-test
+   :output-to "target/test/lib/test.js"
+   :ns-regexp "conao3.claude-code-dashboard.(util|lib)-test$"}}}
