@@ -124,13 +124,6 @@
   (-> (list-sessions (aget parent "projectId"))
       (paginate args)))
 
-(s/defn ^:private message-type->typename :- s/Str
-  [type :- s/Str]
-  (case type
-    "assistant" "AssistantMessage"
-    "user" "UserMessage"
-    "UnknownMessage"))
-
 (s/defn ^:private content->string :- s/Str
   [content :- s/Any]
   (if (string? content)
