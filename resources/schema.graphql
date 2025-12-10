@@ -188,7 +188,8 @@ type SummaryMessage implements Node & Message {
 
 type MessageConnection { edges: [MessageEdge!]! pageInfo: PageInfo! }
 type MessageEdge { cursor: String! node: Message }
-interface Message {
+interface Message implements Node {
+  id: ID!
   projectId: String!
   sessionId: String!
   messageId: String!
