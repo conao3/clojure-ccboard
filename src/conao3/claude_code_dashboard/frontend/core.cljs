@@ -310,7 +310,7 @@
     [:div.mt-3.p-3.rounded-lg.bg-notice-background.text-white
      [:div.text-xs.font-medium (str "Unknown: " (:type block))]]))
 
-(defn MessageBubble [{:keys [role icon icon-class children time tool-count thinking?]}]
+(defn MessageBubble [{:keys [role icon icon-class time tool-count thinking?]} & children]
   [:div {:class (str "mb-4 " (when (= role :user) "pl-12"))}
    [:div {:class (str "rounded-xl p-4 border "
                       (if (= role :user)
@@ -330,7 +330,7 @@
         (when tool-count
           [:span.text-xs.text-cyan-500.flex.items-center.gap-1
            [:> lucide/Terminal {:size 12}] (str tool-count " tools")])])]
-    children]])
+    (into [:<>] children)]])
 
 (defn safe-yaml-dump [raw-message]
   (try
