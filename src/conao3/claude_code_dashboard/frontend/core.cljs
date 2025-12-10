@@ -45,6 +45,20 @@
 (defonce selected-session-id (r/atom nil))
 (defonce session-search (r/atom ""))
 
+(defn- parse-url-path []
+  (let [path (.-pathname js/window.location)
+        match (re-matches #"/projects/([^/]+)(?:/sessions/([^/]+))?" path)]
+    (when match
+      {:project-id (second match)
+       :session-id (nth match 2 nil)})))
+
+(defn- update-url! [project-id session-id]
+  (let [path (cond
+               (and project-id session-id) (str "/projects/" project-id "/sessions/" session-id)
+               project-id (str "/projects/" project-id)
+               :else "/")]
+    (.pushState js/window.history nil "" path)))
+
 (def session-messages-query
   (apollo/gql "query SessionMessages($id: ID!) {
     node(id: $id) {
@@ -596,6 +610,14 @@
    [:div.flex-1.flex.flex-col.min-h-0.p-5
     [:f> MessageList]]])
 
+(defn- find-by-project-id [projects project-id]
+  (some #(when (= (:projectId %) project-id) %) projects))
+
+(defn- find-by-session-id [sessions session-id]
+  (some #(when (= (:sessionId %) session-id) %) sessions))
+
+(defonce url-initialized (atom false))
+
 (defn MainContent []
   (let [result (apollo.react/useQuery projects-query)
         loading (.-loading result)
@@ -617,6 +639,13 @@
                                :projectId (.-projectId session)
                                :sessionId (.-sessionId session)
                                :createdAt (.-createdAt session)}))}))
+            _ (when-not @url-initialized
+                (when-let [{:keys [project-id session-id]} (parse-url-path)]
+                  (when-let [project (find-by-project-id projects project-id)]
+                    (reset! selected-project-id (:id project))
+                    (when-let [session (find-by-session-id (:sessions project) session-id)]
+                      (reset! selected-session-id (:id session)))))
+                (reset! url-initialized true))
             selected-project (some #(when (= (:id %) @selected-project-id) %) projects)
             selected-session (when selected-project
                                (some #(when (= (:id %) @selected-session-id) %) (:sessions selected-project)))]
@@ -625,11 +654,14 @@
                    :selected-project selected-project
                    :on-select-project (fn [project]
                                         (reset! selected-project-id (:id project))
-                                        (reset! selected-session-id nil))}]
+                                        (reset! selected-session-id nil)
+                                        (update-url! (:projectId project) nil))}]
          [SessionsPanel {:project selected-project
                          :sessions (or (:sessions selected-project) [])
                          :selected-session selected-session
-                         :on-select-session #(reset! selected-session-id (:id %))}]
+                         :on-select-session (fn [session]
+                                              (reset! selected-session-id (:id session))
+                                              (update-url! (:projectId selected-project) (:sessionId session)))}]
          [MessagesPanel {:session selected-session}]]))))
 
 (defn App []
