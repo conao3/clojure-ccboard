@@ -33,6 +33,12 @@
    :sessionId SessionId
    :createdAt Timestamp})
 
+(def PaginationArgs
+  {(s/optional-key :first-n) (s/maybe s/Int)
+   (s/optional-key :after-cursor) (s/maybe Cursor)
+   (s/optional-key :last-n) (s/maybe s/Int)
+   (s/optional-key :before-cursor) (s/maybe Cursor)})
+
 (def PageInfo
   {:hasNextPage s/Bool
    :hasPreviousPage s/Bool

@@ -1,6 +1,5 @@
 (ns conao3.claude-code-dashboard.backend.core
   (:require
-   ["@anthropic-ai/claude-agent-sdk" :as claude]
    ["@apollo/server" :as apollo]
    ["@apollo/server/plugin/disabled" :as apollo.plugin.disabled]
    ["@apollo/server/plugin/landingPage/default" :as apollo.landing]
@@ -10,7 +9,9 @@
    ["node:fs" :as fs]
    ["node:os" :as os]
    ["node:path" :as path]
-   [conao3.claude-code-dashboard.schema :as s.schema]
+   [clojure.string :as str]
+   [conao3.claude-code-dashboard.lib :as c.lib]
+   [conao3.claude-code-dashboard.util :as c.util]
    [schema.core :as s]
    [shadow.resource :as shadow.resource]))
 
@@ -19,348 +20,75 @@
 (when goog.DEBUG
   (s/set-fn-validation! true))
 
-(s/defn ^:private encode-id :- s.schema/ID
-  [type :- s/Str
-   raw-id :- s.schema/RawId]
-  (js/btoa (str type ":" raw-id)))
+(defn ^:private stringify [x]
+  (js/JSON.stringify (clj->js x)))
 
-(s/defn ^:private decode-id :- s.schema/DecodedId
-  [id :- s.schema/ID]
-  (let [[type raw-id] (.split (js/atob id) ":")]
-    {:type type :raw-id raw-id}))
+(defn ^:private projects-dir []
+  (.join path (.homedir os) ".claude" "projects"))
 
-(s/defn ^:private read-claude-json :- s.schema/ClaudeJson
-  []
+(defn ^:private read-claude-json []
   (let [claude-json-path (.join path (.homedir os) ".claude.json")]
     (-> (.readFileSync fs claude-json-path "utf-8")
         (js/JSON.parse)
         (js->clj :keywordize-keys true))))
 
-(s/defn ^:private path->slug :- s/Str
-  [p :- s/Str]
-  (.replace p (js/RegExp. "/" "g") "-"))
-
-(s/defn ^:private projects-dir :- s/Str
-  []
-  (.join path (.homedir os) ".claude" "projects"))
-
-(s/defn ^:private list-sessions :- [s.schema/Session]
-  [project-id :- s.schema/ProjectId]
+(defn ^:private list-sessions [project-id]
   (let [project-dir (.join path (projects-dir) project-id)
         files (try (js->clj (.readdirSync fs project-dir)) (catch :default _ []))]
     (->> files
-         (filter #(and (.endsWith % ".jsonl") (not (.startsWith % "agent-"))))
+         (filter #(and (str/ends-with? % ".jsonl") (not (str/starts-with? % "agent-"))))
          (map (fn [filename]
-                (let [session-id (.replace filename ".jsonl" "")
+                (let [session-id (str/replace filename ".jsonl" "")
                       file-path (.join path project-dir filename)
                       stat (.statSync fs file-path)
                       created-at (.toISOString (.-birthtime stat))]
-                  {:__typename "Session"
-                  :id (encode-id "Session" (str project-id "/" session-id))
-                   :projectId project-id
-                   :sessionId session-id
-                   :createdAt created-at})))
+                  (c.lib/make-session project-id session-id created-at))))
          (sort-by :createdAt)
          reverse
          vec)))
 
-(s/defn ^:private list-projects :- [s.schema/Project]
-  []
-  (let [claude-json (read-claude-json)]
-    (->> (:projects claude-json)
-         (map (fn [[k _v]]
-                (let [project-path (subs (str k) 1)
-                      project-id (path->slug project-path)]
-                  {:__typename "Project"
-                  :id (encode-id "Project" project-id)
-                   :projectId project-id
-                   :name project-path})))
-         vec)))
+(defn ^:private list-projects []
+  (c.lib/claude-json->projects (read-claude-json)))
 
-(s/defn ^:private find-cursor-idx :- (s/maybe s/Int)
-  [items :- [s/Any]
-   cursor :- (s/maybe s.schema/Cursor)]
-  (when cursor
-    (->> items
-         (keep-indexed (fn [idx item] (when (= (:id item) cursor) idx)))
-         first)))
-
-(s/defn ^:private paginate :- s/Any
-  [all-items :- [s/Any]
-   args :- s/Any]
-  (let [^js args args
-        first-n (.-first args)
-        after-cursor (.-after args)
-        last-n (.-last args)
-        before-cursor (.-before args)
-        all-items (vec all-items)
-        after-idx (find-cursor-idx all-items after-cursor)
-        before-idx (find-cursor-idx all-items before-cursor)
-        filtered-items (cond
-                         (and after-idx before-idx)
-                         (subvec all-items (inc after-idx) before-idx)
-
-                         after-idx
-                         (subvec all-items (inc after-idx))
-
-                         before-idx
-                         (subvec all-items 0 before-idx)
-
-                         :else
-                         all-items)
-        items (cond
-                first-n (vec (take first-n filtered-items))
-                last-n (vec (take-last last-n filtered-items))
-                :else filtered-items)
-        has-next-page (boolean (or (some? before-idx)
-                                   (and first-n (> (count filtered-items) (count items)))))
-        has-previous-page (boolean (or (some? after-idx)
-                                       (and last-n (> (count filtered-items) (count items)))))]
-    {:edges (map (fn [item] {:cursor (:id item) :node item}) items)
-     :pageInfo {:hasNextPage has-next-page
-                :hasPreviousPage has-previous-page
-                :startCursor (some-> (first items) :id)
-                :endCursor (some-> (last items) :id)}}))
-
-(s/defn ^:private content->string :- s/Str
-  [content :- s/Any]
-  (if (string? content)
-    content
-    (js/JSON.stringify (clj->js content))))
-
-(s/defn ^:private parse-user-content-block :- s.schema/UserContentBlock
-  [block :- s/Any]
-  (if (string? block)
-    {:type "text" :text block}
-    {:type (:type block)
-     :text (:text block)
-     :tool_use_id (:tool_use_id block)
-     :content (when-let [c (:content block)] (content->string c))}))
-
-(s/defn ^:private parse-user-content :- [s.schema/UserContentBlock]
-  [content :- s/Any]
-  (if (string? content)
-    [{:type "text" :text content}]
-    (mapv parse-user-content-block content)))
-
-(s/defn ^:private parse-user-message :- s.schema/UserMessage
-  [data :- s/Any
-   project-id :- s.schema/ProjectId
-   session-id :- s.schema/SessionId
-   message-id :- s.schema/MessageId
-   line :- s/Str]
-  {:__typename "UserMessage"
-   :id (encode-id "Message" (str project-id "/" session-id "/" message-id))
-   :projectId project-id
-   :sessionId session-id
-   :messageId message-id
-   :rawMessage line
-   :parentUuid (:parentUuid data)
-   :isSidechain (boolean (:isSidechain data))
-   :userType (:userType data)
-   :cwd (:cwd data)
-   :version (:version data)
-   :gitBranch (:gitBranch data)
-   :timestamp (:timestamp data)
-   :message {:role (get-in data [:message :role])
-             :content (parse-user-content (get-in data [:message :content]))}
-   :thinkingMetadata (when-let [tm (:thinkingMetadata data)]
-                       {:level (:level tm)
-                        :disabled (boolean (:disabled tm))
-                        :triggers (or (:triggers tm) [])})})
-
-(s/defn ^:private parse-assistant-content-block :- s.schema/AssistantContentBlock
-  [block :- s/Any]
-  {:type (:type block)
-   :text (:text block)
-   :thinking (:thinking block)
-   :signature (:signature block)
-   :id (:id block)
-   :name (:name block)
-   :input (when-let [input (:input block)] (js/JSON.stringify (clj->js input)))
-   :tool_use_id (:tool_use_id block)
-   :content (when-let [content (:content block)] (content->string content))})
-
-(s/defn ^:private parse-assistant-message :- s.schema/AssistantMessage
-  [data :- s/Any
-   project-id :- s.schema/ProjectId
-   session-id :- s.schema/SessionId
-   message-id :- s.schema/MessageId
-   line :- s/Str]
-  (let [msg (:message data)
-        usage (:usage msg)
-        cache-creation (:cache_creation usage)]
-    {:__typename "AssistantMessage"
-     :id (encode-id "Message" (str project-id "/" session-id "/" message-id))
-     :projectId project-id
-     :sessionId session-id
-     :messageId message-id
-     :rawMessage line
-     :parentUuid (:parentUuid data)
-     :isSidechain (boolean (:isSidechain data))
-     :userType (:userType data)
-     :cwd (:cwd data)
-     :version (:version data)
-     :gitBranch (:gitBranch data)
-     :requestId (:requestId data)
-     :timestamp (:timestamp data)
-     :message {:model (:model msg)
-               :messageId (:id msg)
-               :type (:type msg)
-               :role (:role msg)
-               :content (mapv parse-assistant-content-block (:content msg))
-               :stop_reason (:stop_reason msg)
-               :stop_sequence (:stop_sequence msg)
-               :usage {:input_tokens (:input_tokens usage)
-                       :cache_creation_input_tokens (:cache_creation_input_tokens usage)
-                       :cache_read_input_tokens (:cache_read_input_tokens usage)
-                       :cache_creation (when cache-creation
-                                         {:ephemeral_5m_input_tokens (:ephemeral_5m_input_tokens cache-creation)
-                                          :ephemeral_1h_input_tokens (:ephemeral_1h_input_tokens cache-creation)})
-                       :output_tokens (:output_tokens usage)
-                       :service_tier (:service_tier usage)}}}))
-
-(s/defn ^:private parse-file-history-snapshot-message :- s.schema/FileHistorySnapshotMessage
-  [data :- s/Any
-   project-id :- s.schema/ProjectId
-   session-id :- s.schema/SessionId
-   message-id :- s.schema/MessageId
-   line :- s/Str]
-  (let [snapshot (:snapshot data)]
-    {:__typename "FileHistorySnapshotMessage"
-     :id (encode-id "Message" (str project-id "/" session-id "/" message-id))
-     :projectId project-id
-     :sessionId session-id
-     :messageId message-id
-     :rawMessage line
-     :snapshot {:messageId (:messageId snapshot)
-                :trackedFileBackups (js/JSON.stringify (clj->js (:trackedFileBackups snapshot)))
-                :timestamp (:timestamp snapshot)}
-     :isSnapshotUpdate (boolean (:isSnapshotUpdate data))}))
-
-(s/defn ^:private parse-queue-operation-message :- s.schema/QueueOperationMessage
-  [data :- s/Any
-   project-id :- s.schema/ProjectId
-   session-id :- s.schema/SessionId
-   message-id :- s.schema/MessageId
-   line :- s/Str]
-  {:__typename "QueueOperationMessage"
-   :id (encode-id "Message" (str project-id "/" session-id "/" message-id))
-   :projectId project-id
-   :sessionId session-id
-   :messageId message-id
-   :rawMessage line
-   :operation (:operation data)
-   :timestamp (:timestamp data)
-   :content (:content data)
-   :queueSessionId (:sessionId data)})
-
-(s/defn ^:private parse-system-message :- s.schema/SystemMessage
-  [data :- s/Any
-   project-id :- s.schema/ProjectId
-   session-id :- s.schema/SessionId
-   message-id :- s.schema/MessageId
-   line :- s/Str]
-  {:__typename "SystemMessage"
-   :id (encode-id "Message" (str project-id "/" session-id "/" message-id))
-   :projectId project-id
-   :sessionId session-id
-   :messageId message-id
-   :rawMessage line
-   :parentUuid (:parentUuid data)
-   :logicalParentUuid (:logicalParentUuid data)
-   :isSidechain (boolean (:isSidechain data))
-   :userType (:userType data)
-   :cwd (:cwd data)
-   :version (:version data)
-   :gitBranch (:gitBranch data)
-   :subtype (:subtype data)
-   :content (:content data)
-   :isMeta (boolean (:isMeta data))
-   :timestamp (:timestamp data)
-   :level (:level data)
-   :compactMetadata (when-let [cm (:compactMetadata data)]
-                      {:trigger (:trigger cm)
-                       :preTokens (:preTokens cm)})})
-
-(s/defn ^:private parse-summary-message :- s.schema/SummaryMessage
-  [data :- s/Any
-   project-id :- s.schema/ProjectId
-   session-id :- s.schema/SessionId
-   message-id :- s.schema/MessageId
-   line :- s/Str]
-  {:__typename "SummaryMessage"
-   :id (encode-id "Message" (str project-id "/" session-id "/" message-id))
-   :projectId project-id
-   :sessionId session-id
-   :messageId message-id
-   :rawMessage line
-   :summary (:summary data)
-   :leafUuid (:leafUuid data)})
-
-(s/defn ^:private parse-message-line :- s.schema/Message
-  [project-id :- s.schema/ProjectId
-   session-id :- s.schema/SessionId
-   idx :- s/Int
-   line :- s/Str]
+(defn ^:private parse-message-line [project-id session-id idx line]
   (try
-    (let [data (js->clj (js/JSON.parse line) :keywordize-keys true)
-          message-id (or (:uuid data) (:messageId data) (str idx))]
-      (case (:type data)
-        "user" (parse-user-message data project-id session-id message-id line)
-        "assistant" (parse-assistant-message data project-id session-id message-id line)
-        "file-history-snapshot" (parse-file-history-snapshot-message data project-id session-id message-id line)
-        "queue-operation" (parse-queue-operation-message data project-id session-id message-id line)
-        "system" (parse-system-message data project-id session-id message-id line)
-        "summary" (parse-summary-message data project-id session-id message-id line)
-        {:__typename "UnknownMessage"
-         :id (encode-id "Message" (str project-id "/" session-id "/" message-id))
-         :projectId project-id
-         :sessionId session-id
-         :messageId message-id
-         :rawMessage line}))
+    (let [parsed-data (js->clj (js/JSON.parse line) :keywordize-keys true)
+          message-id (or (:uuid parsed-data) (:messageId parsed-data) (str idx))]
+      (c.lib/parse-message parsed-data project-id session-id message-id idx line stringify))
     (catch :default _e
-      {:__typename "BrokenMessage"
-       :id (encode-id "Message" (str project-id "/" session-id "/" idx))
-       :projectId project-id
-       :sessionId session-id
-       :messageId (str idx)
-       :rawMessage line})))
+      (c.lib/parse-broken-message project-id session-id idx line))))
 
-(s/defn ^:private list-messages :- [s.schema/Message]
-  [project-id :- s.schema/ProjectId
-   session-id :- s.schema/SessionId]
+(defn ^:private list-messages [project-id session-id]
   (let [file-path (.join path (projects-dir) project-id (str session-id ".jsonl"))
         content (try (.readFileSync fs file-path "utf-8") (catch :default _ ""))
-        lines (->> (.split content "\n") (filter #(not= % "")))]
+        lines (->> (str/split content #"\n") (filter #(not= % "")))]
     (->> lines
          (map-indexed (fn [idx line] (parse-message-line project-id session-id idx line)))
          vec)))
 
-(s/defn ^:private node-resolver :- (s/maybe s/Any)
-  [args :- s/Any]
-  (let [{:keys [type raw-id]} (decode-id (.-id args))]
+(defn ^:private js-args->pagination-args [^js args]
+  {:first-n (.-first args)
+   :after-cursor (.-after args)
+   :last-n (.-last args)
+   :before-cursor (.-before args)})
+
+(defn ^:private node-resolver [^js args]
+  (let [{:keys [type raw-id]} (c.util/decode-id (.-id args))]
     (case type
-      "Project" (->> (list-projects)
-                     (filter #(= (:projectId %) raw-id))
-                     first)
-      "Session" (let [[project-id session-id] (.split raw-id "/")
+      "Project" (c.lib/find-project-by-id (list-projects) raw-id)
+      "Session" (let [[project-id session-id] (str/split raw-id #"/")
                       file-path (.join path (projects-dir) project-id (str session-id ".jsonl"))]
                   (when (.existsSync fs file-path)
                     (let [stat (.statSync fs file-path)]
-                      {:__typename "Session"
-                       :id (.-id args)
-                       :projectId project-id
-                       :sessionId session-id
-                       :createdAt (.toISOString (.-birthtime stat))})))
-      "Message" (let [[project-id session-id message-id] (.split raw-id "/")
+                      (c.lib/make-session project-id session-id (.toISOString (.-birthtime stat))))))
+      "Message" (let [[project-id session-id message-id] (str/split raw-id #"/")
                       file-path (.join path (projects-dir) project-id (str session-id ".jsonl"))
                       content (try (.readFileSync fs file-path "utf-8") (catch :default _ ""))
-                      lines (->> (.split content "\n") (filter #(not= % "")))
+                      lines (->> (str/split content #"\n") (filter #(not= % "")))
                       idx (->> lines
                                (keep-indexed (fn [i l]
-                                               (let [data (js->clj (js/JSON.parse l) :keywordize-keys true)]
-                                                 (when (= message-id (or (:uuid data) (:messageId data)))
+                                               (let [parsed-data (js->clj (js/JSON.parse l) :keywordize-keys true)]
+                                                 (when (= message-id (or (:uuid parsed-data) (:messageId parsed-data)))
                                                    i))))
                                first)]
                   (when idx
@@ -369,18 +97,21 @@
 
 (def resolvers
   {"Query" {"hello" (fn [] "Hello from Apollo Server!")
-            "projects" (fn [_ args] (clj->js (paginate (list-projects) args)))
+            "projects" (fn [_ ^js args]
+                         (-> (list-projects)
+                             (c.util/paginate (js-args->pagination-args args))
+                             clj->js))
             "node" (fn [_ args] (clj->js (node-resolver args)))}
    "Node" {"__resolveType" (fn [obj] (aget obj "__typename"))}
    "Project" {"sessions"
-              (fn [parent args]
+              (fn [parent ^js args]
                 (-> (list-sessions (aget parent "projectId"))
-                    (paginate args)
+                    (c.util/paginate (js-args->pagination-args args))
                     clj->js))}
    "Session" {"messages"
-              (fn messages-resolver [parent args]
+              (fn [parent ^js args]
                 (-> (list-messages (aget parent "projectId") (aget parent "sessionId"))
-                    (paginate args)
+                    (c.util/paginate (js-args->pagination-args args))
                     clj->js))}
    "Message" {"__resolveType" (fn [obj] (aget obj "__typename"))}})
 
@@ -394,7 +125,7 @@
                                                      :resolvers resolvers
                                                      :plugins [(apollo.landing/ApolloServerPluginLandingPageLocalDefault)]}))
         app (express)]
-    (-> (js/Promise.all (clj->js [(.start api-server) (when goog.DEBUG (.start admin-server))]))
+    (-> (js/Promise.all #js [(.start api-server) (when goog.DEBUG (.start admin-server))])
         (.then (fn []
                  (.use app "/api/graphql" (cors) (express/json) (apollo.express/expressMiddleware api-server))
                  (when goog.DEBUG
@@ -410,7 +141,7 @@
 (s/defn stop-server :- (s/eq nil)
   []
   (when-let [{:keys [server api-server admin-server]} @server-state]
-    (-> (js/Promise.all (clj->js [(.stop api-server) (when admin-server (.stop admin-server))]))
+    (-> (js/Promise.all #js [(.stop api-server) (when admin-server (.stop admin-server))])
         (.then (fn []
                  (.close server)
                  (reset! server-state nil)
