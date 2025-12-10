@@ -227,22 +227,28 @@
                                                 items (mapv #(parse-project-node (.-node %)) edges)]
                                             (clj->js {:items items
                                                       :cursor (when (.-hasNextPage page-info)
-                                                                (.-endCursor page-info))})))))))})]
+                                                                (.-endCursor page-info))})))))))})
+        check-scroll-and-load (fn []
+                                (when-let [container (.-current scroll-container-ref)]
+                                  (let [scroll-top (.-scrollTop container)
+                                        scroll-height (.-scrollHeight container)
+                                        client-height (.-clientHeight container)
+                                        threshold 200]
+                                    (when (and (not (.-isLoading list))
+                                               (> (+ scroll-top client-height threshold) scroll-height))
+                                      (.loadMore list)))))]
+    (react/useEffect
+     (fn []
+       (check-scroll-and-load)
+       js/undefined)
+     #js [(count (.-items list)) (.-isLoading list)])
     (cond
       (and (.-isLoading list) (zero? (count (.-items list)))) [:div.p-2.text-neutral-subdued-content.text-sm "Loading..."]
       (.-error list) [:div.p-2.text-negative-content.text-sm "Error"]
       :else
       [:div.flex-1.overflow-y-auto.min-h-0.p-2.flex.flex-col.gap-0.5
        {:ref scroll-container-ref
-        :on-scroll (fn [e]
-                     (when-let [container (.-current scroll-container-ref)]
-                       (let [scroll-top (.-scrollTop container)
-                             scroll-height (.-scrollHeight container)
-                             client-height (.-clientHeight container)
-                             threshold 200]
-                         (when (and (not (.-isLoading list))
-                                    (> (+ scroll-top client-height threshold) scroll-height))
-                           (.loadMore list)))))}
+        :on-scroll (fn [_e] (check-scroll-and-load))}
        (for [^js project (.-items list)]
          (let [p {:id (.-id project) :name (.-name project) :projectId (.-projectId project) :hasSessions (.-hasSessions project)}]
            ^{:key (:id p)}
@@ -345,7 +351,16 @@
                                                 (js/console.log "SessionsList loaded items:" (count items))
                                                 (clj->js {:items items
                                                           :cursor (when (.-hasNextPage page-info)
-                                                                    (.-endCursor page-info))})))))))))})]
+                                                                    (.-endCursor page-info))})))))))))})
+        check-scroll-and-load (fn []
+                                (when-let [container (.-current scroll-container-ref)]
+                                  (let [scroll-top (.-scrollTop container)
+                                        scroll-height (.-scrollHeight container)
+                                        client-height (.-clientHeight container)
+                                        threshold 200]
+                                    (when (and (not (.-isLoading list))
+                                               (> (+ scroll-top client-height threshold) scroll-height))
+                                      (.loadMore list)))))]
     (react/useEffect
      (fn []
        (js/console.log "SessionsList useEffect, project-id:" project-id)
@@ -353,6 +368,11 @@
        (when project-id (.reload list))
        js/undefined)
      #js [project-id])
+    (react/useEffect
+     (fn []
+       (check-scroll-and-load)
+       js/undefined)
+     #js [(count (.-items list)) (.-isLoading list)])
     (let [search-term (str/lower-case @session-search)
           sessions (.-items list)
           filtered-sessions (if (str/blank? search-term)
@@ -365,15 +385,7 @@
         :else
         [:div.flex-1.overflow-y-auto
          {:ref scroll-container-ref
-          :on-scroll (fn [e]
-                       (when-let [container (.-current scroll-container-ref)]
-                         (let [scroll-top (.-scrollTop container)
-                               scroll-height (.-scrollHeight container)
-                               client-height (.-clientHeight container)
-                               threshold 200]
-                           (when (and (not (.-isLoading list))
-                                      (> (+ scroll-top client-height threshold) scroll-height))
-                             (.loadMore list)))))}
+          :on-scroll (fn [_e] (check-scroll-and-load))}
          (for [^js session filtered-sessions]
            (let [s {:id (.-id session) :projectId (.-projectId session) :sessionId (.-sessionId session) :createdAt (.-createdAt session)}]
              ^{:key (:id s)}
@@ -777,7 +789,16 @@
                                                 (set! (.-current has-next-page-ref) (.-hasNextPage page-info))
                                                 (clj->js {:items items
                                                           :cursor (when (.-hasNextPage page-info)
-                                                                    (.-endCursor page-info))})))))))))})]
+                                                                    (.-endCursor page-info))})))))))))})
+        check-scroll-and-load (fn []
+                                (when-let [container (.-current scroll-container-ref)]
+                                  (let [scroll-top (.-scrollTop container)
+                                        scroll-height (.-scrollHeight container)
+                                        client-height (.-clientHeight container)
+                                        threshold 200]
+                                    (when (and (not (.-isLoading list))
+                                               (> (+ scroll-top client-height threshold) scroll-height))
+                                      (.loadMore list)))))]
     (react/useEffect
      (fn []
        (js/console.log "MessageList useEffect, session-id:" session-id)
@@ -785,6 +806,11 @@
        (when session-id (.reload list))
        js/undefined)
      #js [session-id])
+    (react/useEffect
+     (fn []
+       (check-scroll-and-load)
+       js/undefined)
+     #js [(count (.-items list)) (.-isLoading list)])
     (let [messages (vec (for [^js item (.-items list)]
                           (js->clj item :keywordize-keys true)))
           has-next-page (.-current has-next-page-ref)
@@ -817,15 +843,7 @@
           [:span (str tool-call-count " tool calls")]]
          [:div.flex-1.overflow-y-auto.min-h-0.pr-2
           {:ref scroll-container-ref
-           :on-scroll (fn [e]
-                        (when-let [container (.-current scroll-container-ref)]
-                          (let [scroll-top (.-scrollTop container)
-                                scroll-height (.-scrollHeight container)
-                                client-height (.-clientHeight container)
-                                threshold 200]
-                            (when (and (not (.-isLoading list))
-                                       (> (+ scroll-top client-height threshold) scroll-height))
-                              (.loadMore list)))))}
+           :on-scroll (fn [_e] (check-scroll-and-load))}
           (if (empty? messages)
             [:div.text-neutral-subdued-content "No messages"]
             [:<>
