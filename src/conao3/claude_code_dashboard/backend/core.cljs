@@ -248,12 +248,15 @@
     (->> lines
          (map-indexed (fn [idx line] (parse-message-line project-id session-id idx line))))))
 
-(defn- messages-resolver [parent]
+(defn- messages-resolver [parent args]
   (let [project-id (aget parent "projectId")
         session-id (aget parent "sessionId")
-        messages (list-messages project-id session-id)]
+        first-n (.-first args)
+        all-messages (list-messages project-id session-id)
+        messages (if first-n (take first-n all-messages) all-messages)
+        has-next-page (and first-n (> (count all-messages) first-n))]
     #js {:edges (clj->js (map (fn [m] {:cursor (:id m) :node m}) messages))
-         :pageInfo #js {:hasNextPage false
+         :pageInfo #js {:hasNextPage has-next-page
                         :hasPreviousPage false
                         :startCursor (some-> (first messages) :id)
                         :endCursor (some-> (last messages) :id)}}))
