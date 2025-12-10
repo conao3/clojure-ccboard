@@ -20,11 +20,11 @@
 (when goog.DEBUG
   (s/set-fn-validation! true))
 
-(defonce apollo-client
+(def apollo-client
   (apollo/ApolloClient. #js {:link (apollo/HttpLink. #js {:uri "/api/graphql"})
                              :cache (apollo/InMemoryCache.)
-                             :defaultOptions #js {:query #js {:errorPolicy "all"}
-                                                  :watchQuery #js {:errorPolicy "all"}}}))
+                             :defaultOptions {:query {:errorPolicy "all"}
+                                              :watchQuery {:errorPolicy "all"}}}))
 
 (def projects-query
   (apollo/gql "query Projects($first: Int, $after: String) {
@@ -218,16 +218,16 @@
         list (stately/useAsyncList
               #js {:load (fn [^js opts]
                            (let [cursor (.-cursor opts)]
-                             (-> (.query apollo-client #js {:query projects-query
-                                                            :variables #js {:first 20 :after cursor}})
+                             (-> (.query apollo-client (clj->js {:query projects-query
+                                                                 :variables {:first 20 :after cursor}}))
                                  (.then (fn [^js result]
                                           (let [data (.-data result)
                                                 edges (-> data .-projects .-edges)
                                                 page-info (-> data .-projects .-pageInfo)
                                                 items (mapv #(parse-project-node (.-node %)) edges)]
-                                            #js {:items (clj->js items)
-                                                 :cursor (when (.-hasNextPage page-info)
-                                                           (.-endCursor page-info))}))))))})]
+                                            (clj->js {:items items
+                                                      :cursor (when (.-hasNextPage page-info)
+                                                                (.-endCursor page-info))})))))))})]
     (cond
       (and (.-isLoading list) (zero? (count (.-items list)))) [:div.p-2.text-neutral-subdued-content.text-sm "Loading..."]
       (.-error list) [:div.p-2.text-negative-content.text-sm "Error"]
@@ -333,19 +333,19 @@
                            (let [pid (.-current project-id-ref)]
                              (js/console.log "SessionsList load called, pid:" pid)
                              (if (nil? pid)
-                               (js/Promise.resolve #js {:items #js []})
+                               (js/Promise.resolve (clj->js {:items []}))
                                (let [cursor (.-cursor opts)]
-                                 (-> (.query apollo-client #js {:query project-sessions-query
-                                                                 :variables #js {:id pid :first 20 :after cursor}})
+                                 (-> (.query apollo-client (clj->js {:query project-sessions-query
+                                                                     :variables {:id pid :first 20 :after cursor}}))
                                      (.then (fn [^js result]
                                               (let [data (.-data result)
                                                     edges (-> data .-node .-sessions .-edges)
                                                     page-info (-> data .-node .-sessions .-pageInfo)
                                                     items (mapv #(parse-session-node (.-node %)) edges)]
                                                 (js/console.log "SessionsList loaded items:" (count items))
-                                                #js {:items (clj->js items)
-                                                     :cursor (when (.-hasNextPage page-info)
-                                                               (.-endCursor page-info))}))))))))})]
+                                                (clj->js {:items items
+                                                          :cursor (when (.-hasNextPage page-info)
+                                                                    (.-endCursor page-info))})))))))))})]
     (react/useEffect
      (fn []
        (js/console.log "SessionsList useEffect, project-id:" project-id)
@@ -425,29 +425,29 @@
          [:<> [:> lucide/Copy {:size 12}] (or label "Copy")])])))
 
 (def markdown-components
-  #js {:h1 (fn [props] (r/as-element [:h1.text-xl.font-bold.mt-4.mb-2.text-neutral-content (.-children props)]))
-       :h2 (fn [props] (r/as-element [:h2.text-lg.font-bold.mt-3.mb-2.text-neutral-content (.-children props)]))
-       :h3 (fn [props] (r/as-element [:h3.text-base.font-bold.mt-2.mb-1.text-neutral-content (.-children props)]))
-       :p (fn [props] (r/as-element [:p.mb-2.last:mb-0.text-neutral-content (.-children props)]))
-       :ul (fn [props] (r/as-element [:ul.list-disc.list-inside.mb-2.text-neutral-content (.-children props)]))
-       :ol (fn [props] (r/as-element [:ol.list-decimal.list-inside.mb-2.text-neutral-content (.-children props)]))
-       :li (fn [props] (r/as-element [:li.mb-1 (.-children props)]))
-       :code (fn [props]
-               (if (.-inline props)
-                 (r/as-element [:code.bg-background-layer-1.px-1.py-0.5.rounded.text-sm.font-mono (.-children props)])
-                 (r/as-element [:code.font-mono (.-children props)])))
-       :pre (fn [props] (r/as-element [:pre.bg-background-layer-1.p-3.rounded-lg.overflow-x-auto.mb-2.text-sm (.-children props)]))
-       :blockquote (fn [props] (r/as-element [:blockquote.border-l-4.border-gray-300.pl-4.italic.text-neutral-subdued-content.mb-2 (.-children props)]))
-       :a (fn [props] (r/as-element [:a.text-accent-content.underline {:href (.-href props) :target "_blank"} (.-children props)]))
-       :table (fn [props] (r/as-element [:table.w-full.border-collapse.mb-2 (.-children props)]))
-       :th (fn [props] (r/as-element [:th.border.border-gray-300.px-2.py-1.bg-background-layer-1.text-left.font-medium (.-children props)]))
-       :td (fn [props] (r/as-element [:td.border.border-gray-300.px-2.py-1 (.-children props)]))})
+  {:h1 (fn [props] (r/as-element [:h1.text-xl.font-bold.mt-4.mb-2.text-neutral-content (.-children props)]))
+   :h2 (fn [props] (r/as-element [:h2.text-lg.font-bold.mt-3.mb-2.text-neutral-content (.-children props)]))
+   :h3 (fn [props] (r/as-element [:h3.text-base.font-bold.mt-2.mb-1.text-neutral-content (.-children props)]))
+   :p (fn [props] (r/as-element [:p.mb-2.last:mb-0.text-neutral-content (.-children props)]))
+   :ul (fn [props] (r/as-element [:ul.list-disc.list-inside.mb-2.text-neutral-content (.-children props)]))
+   :ol (fn [props] (r/as-element [:ol.list-decimal.list-inside.mb-2.text-neutral-content (.-children props)]))
+   :li (fn [props] (r/as-element [:li.mb-1 (.-children props)]))
+   :code (fn [props]
+           (if (.-inline props)
+             (r/as-element [:code.bg-background-layer-1.px-1.py-0.5.rounded.text-sm.font-mono (.-children props)])
+             (r/as-element [:code.font-mono (.-children props)])))
+   :pre (fn [props] (r/as-element [:pre.bg-background-layer-1.p-3.rounded-lg.overflow-x-auto.mb-2.text-sm (.-children props)]))
+   :blockquote (fn [props] (r/as-element [:blockquote.border-l-4.border-gray-300.pl-4.italic.text-neutral-subdued-content.mb-2 (.-children props)]))
+   :a (fn [props] (r/as-element [:a.text-accent-content.underline {:href (.-href props) :target "_blank"} (.-children props)]))
+   :table (fn [props] (r/as-element [:table.w-full.border-collapse.mb-2 (.-children props)]))
+   :th (fn [props] (r/as-element [:th.border.border-gray-300.px-2.py-1.bg-background-layer-1.text-left.font-medium (.-children props)]))
+   :td (fn [props] (r/as-element [:td.border.border-gray-300.px-2.py-1 (.-children props)]))})
 
 (s/defn Markdown :- s.schema/Hiccup
   [{:keys [children class]} :- s.schema/MarkdownProps]
   [:> ReactMarkdown/default
    {:remarkPlugins #js [remarkGfm/default]
-    :components markdown-components
+    :components (clj->js markdown-components)
     :className class}
    children])
 
@@ -764,10 +764,10 @@
                            (let [sid (.-current session-id-ref)]
                              (js/console.log "MessageList load called, sid:" sid)
                              (if (nil? sid)
-                               (js/Promise.resolve #js {:items #js []})
+                               (js/Promise.resolve (clj->js {:items []}))
                                (let [cursor (.-cursor opts)]
-                                 (-> (.query apollo-client #js {:query session-messages-query
-                                                                 :variables #js {:id sid :first 20 :after cursor}})
+                                 (-> (.query apollo-client (clj->js {:query session-messages-query
+                                                                     :variables {:id sid :first 20 :after cursor}}))
                                      (.then (fn [^js result]
                                               (let [data (.-data result)
                                                     edges (-> data .-node .-messages .-edges)
@@ -775,9 +775,9 @@
                                                     items (mapv #(parse-message-node (.-node %)) edges)]
                                                 (js/console.log "MessageList loaded items:" (count items))
                                                 (set! (.-current has-next-page-ref) (.-hasNextPage page-info))
-                                                #js {:items (clj->js items)
-                                                     :cursor (when (.-hasNextPage page-info)
-                                                               (.-endCursor page-info))}))))))))})]
+                                                (clj->js {:items items
+                                                          :cursor (when (.-hasNextPage page-info)
+                                                                    (.-endCursor page-info))})))))))))})]
     (react/useEffect
      (fn []
        (js/console.log "MessageList useEffect, session-id:" session-id)
@@ -836,8 +836,8 @@
                                      :displayed-tool-use-ids displayed-tool-use-ids}])
              (when (.-isLoading list)
                [:div.flex.items-center.justify-center.py-4.text-neutral-subdued-content
-              [:> lucide/Loader2 {:size 20 :className "animate-spin mr-2"}]
-              "Loading more..."])])]]))))
+                [:> lucide/Loader2 {:size 20 :className "animate-spin mr-2"}]
+                "Loading more..."])])]]))))
 
 (s/defn MessagesPanel :- s.schema/Hiccup
   []
