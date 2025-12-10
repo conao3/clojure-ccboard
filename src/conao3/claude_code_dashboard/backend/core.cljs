@@ -85,7 +85,8 @@
 (s/defn ^:private paginate :- s/Any
   [all-items :- [s/Any]
    args :- s/Any]
-  (let [first-n (.-first args)
+  (let [^js args args
+        first-n (.-first args)
         after-cursor (.-after args)
         last-n (.-last args)
         before-cursor (.-before args)
