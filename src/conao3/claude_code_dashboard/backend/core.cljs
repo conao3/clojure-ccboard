@@ -140,8 +140,9 @@
                    (let [public-dir (get-public-dir)]
                      (.use app (express/static public-dir))
                      ;; Serve index.html for all non-API routes (SPA support)
-                     (.get app "*" (fn [_req res]
-                                     (.sendFile res (.join path public-dir "index.html"))))))
+                     ;; Express 5 requires named wildcard parameter
+                     (.get app "{*path}" (fn [_req res]
+                                           (.sendFile res (.join path public-dir "index.html"))))))
                  (let [server (.listen app port)]
                    (reset! server-state {:server server :api-server api-server :admin-server admin-server})
                    (if goog.DEBUG
