@@ -71,7 +71,7 @@
              rl (.createInterface readline #js {:input stream :crlfDelay js/Infinity})]
          (.on rl "line"
               (fn [line]
-                (when (not= line "")
+                (when (not= "" line)
                   (cond
                     (< @current-idx skip)
                     nil
@@ -110,7 +110,7 @@
                       idx (js/parseInt idx-str 10)
                       file-path (.join path (projects-dir) project-id (str session-id ".jsonl"))
                       content (try (.readFileSync fs file-path "utf-8") (catch :default _ ""))
-                      lines (->> (str/split content #"\n") (filter #(not= % "")))]
+                      lines (->> (str/split content #"\n") (filter #(not= "" %)))]
                   (when (< idx (count lines))
                     (parse-message-line project-id session-id idx (nth lines idx))))
       nil)))

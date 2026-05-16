@@ -1,4 +1,5 @@
 {:skip-comments true
+ :lint-as {portfolio.reagent-18/defscene clj-kondo.lint-as/def-catch-all}
  :linters
  ;; ref: https://github.com/clj-kondo/clj-kondo/blob/master/src/clj_kondo/impl/config.clj
  {:def-fn {:level :error}
