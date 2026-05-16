@@ -42,31 +42,31 @@
     "access": "public"
   },
   "dependencies": {
-    "@anthropic-ai/claude-agent-sdk": "^0.1.62",
-    "@apollo/client": "^4.0.9",
-    "@apollo/server": "^5.2.0",
+    "@anthropic-ai/claude-agent-sdk": "^0.3.143",
+    "@apollo/client": "^4.1.9",
+    "@apollo/server": "^5.5.1",
     "@as-integrations/express5": "^1.1.2",
     "express": "^5.2.1",
-    "graphql": "^16.12.0",
+    "graphql": "^16.14.0",
     "js-yaml": "^4.1.1",
-    "lucide-react": "^0.556.0",
-    "react": "^19.2.0",
-    "react-aria-components": "^1.13.0",
-    "react-dom": "^19.2.0",
+    "lucide-react": "^1.16.0",
+    "react": "^19.2.6",
+    "react-aria-components": "^1.17.0",
+    "react-dom": "^19.2.6",
     "react-markdown": "^10.1.0",
-    "react-stately": "^3.42.0",
+    "react-stately": "^3.46.0",
     "remark-gfm": "^4.0.1",
-    "snabbdom": "3.5.1",
-    "tailwindcss": "^4.1.17",
+    "snabbdom": "3.6.3",
+    "tailwindcss": "^4.3.0",
     "tailwindcss-animate": "^1.0.7",
-    "tailwindcss-react-aria-components": "^2.0.1"
+    "tailwindcss-react-aria-components": "^2.1.0"
   },
   "devDependencies": {
-    "@tailwindcss/postcss": "^4.1.17",
-    "postcss": "^8.5.6",
+    "@tailwindcss/postcss": "^4.3.0",
+    "postcss": "^8.5.14",
     "postcss-cli": "^11.0.1",
-    "prettier": "^3.7.4",
-    "prettier-plugin-tailwindcss": "^0.7.2",
-    "shadow-cljs": "^3.3.2"
+    "prettier": "^3.8.3",
+    "prettier-plugin-tailwindcss": "^0.8.0",
+    "shadow-cljs": "^3.4.10"
   }
 }
