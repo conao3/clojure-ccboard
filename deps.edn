@@ -1,19 +1,20 @@
 {:paths ["src" "resources"]
 
  :deps
- {org.clojure/clojure {:mvn/version "1.12.3"}
+ {org.clojure/clojure {:mvn/version "1.12.5"}
   camel-snake-kebab/camel-snake-kebab {:mvn/version "0.4.3"}}
 
  :aliases
  {:dev {:extra-paths ["dev" "test"]
         :extra-deps {com.stuartsierra/component.repl {:mvn/version "1.0.0"}}}
-  :cljs {:extra-deps {org.clojure/clojurescript {:mvn/version "1.12.116"}
-                      thheller/shadow-cljs {:mvn/version "3.3.2"}
+  :cljs {:extra-deps {org.clojure/clojurescript {:mvn/version "1.12.145"}
+                      thheller/shadow-cljs {:mvn/version "3.4.10"}
+                      thheller/shadow-undertow {:mvn/version "0.3.4"}
                       reagent/reagent {:mvn/version "2.0.1"}
-                      no.cjohansen/portfolio {:mvn/version "2024.09.25"}
+                      no.cjohansen/portfolio {:mvn/version "2026.03.1"}
                       prismatic/schema {:mvn/version "1.4.1"}}}
-  :repl {:extra-deps {nrepl/nrepl {:mvn/version "1.5.1"}
-                      cider/cider-nrepl {:mvn/version "0.58.0"}}
+  :repl {:extra-deps {nrepl/nrepl {:mvn/version "1.7.0"}
+                      cider/cider-nrepl {:mvn/version "0.59.0"}}
          :jvm-opts ["-Djdk.attach.allowAttachSelf"]
          :main-opts ["-m" "nrepl.cmdline"
                      "--interactive"
