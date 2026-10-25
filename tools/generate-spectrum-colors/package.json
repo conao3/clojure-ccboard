@@ -5,8 +5,8 @@
   "type": "module",
   "main": "index.mjs",
   "dependencies": {
-    "@adobe/spectrum-tokens": "^14.7.0",
+    "@adobe/spectrum-tokens": "^15.6.0",
     "glob": "^13.0.6",
-    "prettier": "^3.8.3"
+    "prettier": "^3.9.10"
   }
 }
