@@ -11,37 +11,40 @@
       imports = [
         inputs.treefmt-nix.flakeModule
       ];
-      perSystem = {
-        pkgs,
-        system,
-        ...
-      }: let
-        overlay = final: prev: let
-          jdk = prev.graalvmPackages.graalvm-ce;
-          nodejs = prev.nodejs_24;
-          clojure = prev.clojure.override {inherit jdk;};
-          pnpm = prev.pnpm_10.override {inherit nodejs;};
-        in {
-          inherit jdk nodejs clojure pnpm;
+      perSystem =
+        { pkgs
+        , system
+        , ...
+        }:
+        let
+          overlay = final: prev:
+            let
+              jdk = prev.graalvmPackages.graalvm-ce;
+              nodejs = prev.nodejs_latest;
+              clojure = prev.clojure.override { inherit jdk; };
+            in
+            {
+              inherit jdk nodejs clojure;
+            };
+          pkgs = import inputs.nixpkgs {
+            inherit system;
+            overlays = [ overlay ];
+          };
+        in
+        {
+          devShells.default = pkgs.mkShell {
+            packages = with pkgs; [
+              jdk
+              clojure
+              clj-kondo
+              nodejs
+              pnpm
+            ];
+          };
+          treefmt.config = {
+            projectRootFile = "flake.nix";
+            programs.nixpkgs-fmt.enable = true;
+          };
         };
-        pkgs = import inputs.nixpkgs {
-          inherit system;
-          overlays = [overlay];
-        };
-      in {
-        devShells.default = pkgs.mkShell {
-          packages = with pkgs; [
-            jdk
-            clojure
-            clj-kondo
-            nodejs
-            pnpm
-          ];
-        };
-        treefmt.config = {
-          projectRootFile = "flake.nix";
-          programs.nixpkgs-fmt.enable = true;
-        };
-      };
     };
 }
