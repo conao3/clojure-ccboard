@@ -3,6 +3,6 @@ packages:
 
 nodeLinker: hoisted
 
-onlyBuiltDependencies:
-  - '@anthropic-ai/claude-agent-sdk'
-  - '@apollo/protobufjs'
+allowBuilds:
+  '@anthropic-ai/claude-agent-sdk': true
+  '@apollo/protobufjs': true
