@@ -13,23 +13,13 @@
       ];
       perSystem =
         { pkgs
-        , system
         , ...
         }:
         let
-          overlay = final: prev:
-            let
-              jdk = prev.graalvmPackages.graalvm-ce;
-              nodejs = prev.nodejs_latest;
-              clojure = prev.clojure.override { inherit jdk; };
-            in
-            {
-              inherit jdk nodejs clojure;
-            };
-          pkgs = import inputs.nixpkgs {
-            inherit system;
-            overlays = [ overlay ];
-          };
+          jdk = pkgs.graalvmPackages.graalvm-ce;
+          nodejs = pkgs.nodejs_26;
+          clojure = pkgs.clojure.override { inherit jdk; };
+          pnpm = pkgs.pnpm.override { nodejs-slim = pkgs.nodejs-slim_26; };
         in
         {
           devShells.default = pkgs.mkShell {
