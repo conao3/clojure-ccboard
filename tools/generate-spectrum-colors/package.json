@@ -6,7 +6,7 @@
   "main": "index.mjs",
   "dependencies": {
     "@adobe/spectrum-tokens": "^15.6.0",
-    "glob": "^13.0.6",
+    "glob": "^14.0.4",
     "prettier": "^3.9.10"
   }
 }
