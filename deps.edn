@@ -8,7 +8,7 @@
  {:dev {:extra-paths ["dev" "test"]
         :extra-deps {com.stuartsierra/component.repl {:mvn/version "1.0.0"}}}
   :cljs {:extra-deps {org.clojure/clojurescript {:mvn/version "1.12.145"}
-                      thheller/shadow-cljs {:mvn/version "3.5.11"}
+                      thheller/shadow-cljs {:mvn/version "3.5.14"}
                       thheller/shadow-undertow {:mvn/version "0.3.4"}
                       reagent/reagent {:mvn/version "2.0.1"}
                       no.cjohansen/portfolio {:mvn/version "2026.03.1"}
