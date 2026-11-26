@@ -154,7 +154,7 @@ For the complete color reference, see the [Spectrum Design Tokens Viewer](https:
 gh workflow run release.yml --ref master -f version_bump=patch
 ```
 
-The `Release` workflow bumps the version in `package.json`, runs the CI checks and `make dist`, pushes the version commit and the tag `vX.Y.Z` to `master`, publishes `@conao3/ccboard` to npm with trusted publishing, and creates the GitHub Release. If a job after the tag push fails, re-run the failed jobs of the same run.
+The `Release` workflow bumps the version in `package.json`, runs `make dist`, pushes the version commit and the tag `vX.Y.Z` to `master`, publishes `@conao3/ccboard` to npm with trusted publishing, and creates the GitHub Release. If a job after the tag push fails, re-run the failed jobs of the same run.
 
 ## License
 

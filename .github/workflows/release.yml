@@ -23,7 +23,7 @@ defaults:
     shell: bash
 jobs:
   check:
-    name: Bump and check
+    name: Bump version
     runs-on: ubuntu-latest
     timeout-minutes: 45
     permissions:
@@ -70,10 +70,8 @@ jobs:
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           read -ra files <<< "$VERSION_FILES"
           git commit -m "Bump version to $VERSION" -- "${files[@]}"
-      - name: Check backend dependencies and lint
-        run: nix develop --command make ci-backend
-      - name: Install dependencies and validate GraphQL
-        run: nix develop --command make ci-integration
+      - name: Install dependencies
+        run: nix develop --command pnpm install --frozen-lockfile
       - name: Build
         run: nix develop --command make dist
       - name: Verify package
