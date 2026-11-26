@@ -253,7 +253,7 @@ importers:
     dependencies:
       '@adobe/spectrum-tokens':
         specifier: ^15.9.0
-        version: 15.9.0
+        version: 15.9.1
       glob:
         specifier: ^14.0.6
         version: 14.0.6
@@ -263,8 +263,8 @@ importers:
 
 packages:
 
-  '@adobe/spectrum-tokens@15.9.0':
-    resolution: {integrity: sha512-mCg2EHuhoRXg07CfMjFaT7S13m8Dn4syHPXYISyBGs98Lj1eSW7Gw+Q1ZZYaGp6W79PuINDapV53Qtwx5I7ujQ==}
+  '@adobe/spectrum-tokens@15.9.1':
+    resolution: {integrity: sha512-Kbvm6X+IoioeO47W9T2SaHJXzEjdcdmyc/zmOzgDFT4cc1LuzJDabE4SEWnF+mFywYjC/PDWSZmQo1xk/hJXRA==}
 
   '@alloc/quick-lru@5.3.0':
     resolution: {integrity: sha512-U4+70Pc5ZS9osnCBCE5Jha/ciHM+Yp+CNMNC/7HvYbNRk1Ldd+f7qO65W5qfhu/TCv+/ozljlXXe9Nj8419DMA==}
@@ -1913,7 +1913,7 @@ packages:
 
 snapshots:
 
-  '@adobe/spectrum-tokens@15.9.0': {}
+  '@adobe/spectrum-tokens@15.9.1': {}
 
   '@alloc/quick-lru@5.3.0': {}
 
