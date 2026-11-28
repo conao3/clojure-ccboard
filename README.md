@@ -1,4 +1,12 @@
-# ccboard
+<p align="center"><img src="docs/assets/banner.png" alt="ccboard: A dashboard for viewing Claude Code sessions and messages" width="880"></p>
+
+<p align="center"><strong>A dashboard for viewing Claude Code sessions and messages</strong></p>
+
+<p align="center"><a href="https://github.com/conao3/clojure-ccboard/actions/workflows/ci.yml"><img src="https://github.com/conao3/clojure-ccboard/actions/workflows/ci.yml/badge.svg?branch=master" alt="CI"></a> <a href="https://github.com/conao3/clojure-ccboard/releases"><img src="https://img.shields.io/github/v/tag/conao3/clojure-ccboard" alt="Latest tag"></a> <a href="LICENSE"><img src="https://img.shields.io/github/license/conao3/clojure-ccboard" alt="License"></a> <a href="https://github.com/conao3/clojure-ccboard/stargazers"><img src="https://img.shields.io/github/stars/conao3/clojure-ccboard?style=flat" alt="GitHub stars"></a></p>
+
+<p align="center"><a href="#features">Features</a> | <a href="#installation">Installation</a> | <a href="#development">Development</a> | <a href="#license">License</a></p>
+
+<h1>ccboard</h1>
 
 A dashboard for viewing Claude Code sessions and messages, built with ClojureScript and Apollo GraphQL.
 
