@@ -33,6 +33,16 @@ Or run directly with npx:
 npx @conao3/ccboard
 ```
 
+Pick a project and a session in the sidebar to read its messages:
+
+![Session view with the project list, the session list, and the messages of the selected session](images/session.png)
+
+The code button that appears when you hover over a message opens its raw data, which you can copy as YAML or JSON:
+
+![Raw data dialog of a message with the YAML and JSON copy buttons](images/raw-message.png)
+
+The screenshots show demo data in the dark theme.
+
 ## Development
 
 ### Quick Start
